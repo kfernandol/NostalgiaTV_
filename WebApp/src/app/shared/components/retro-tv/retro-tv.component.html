@@ -1,0 +1,60 @@
+<!-- TV Setup with CSS animations -->
+<div class="tv-setup">
+  <div class="tv-container" #tvContainer>
+    <!-- Screen overlay with content -->
+    <div class="screen-overlay" #screenOverlay>
+      <div class="static-noise" [class.hidden]="!showStatic()"></div>
+      <div class="tv-content" [class.episode-transition]="animationState() > 0">
+        <div class="series-logo">SERIES RETRO</div>
+        <div class="episode-display">
+          <h2 class="episode-title">{{ currentEpisode()?.title || 'Selecciona un canal' }}</h2>
+          <span class="episode-year">{{ currentEpisode()?.year || '' }}</span>
+        </div>
+      </div>
+      <div class="crt-scanlines"></div>
+      <div class="crt-glare"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Floor/Carpet -->
+<div class="floor"></div>
+
+<!-- Kid watching at bottom -->
+<div class="kid-section">
+  <div class="kid-image-container">
+    <img src="images/kid-watching.png"
+         alt="Kid watching TV"
+         class="kid-image">
+  </div>
+</div>
+
+<!-- Floating Remote Control -->
+<div class="remote-control">
+  <div class="remote-header">
+    <h3>CONTROL</h3>
+    <div class="remote-led"></div>
+  </div>
+
+  <div class="channels-list">
+    @for (episode of episodes(); track episode.id) {
+      <button
+        class="channel-btn"
+        [class.active]="currentEpisode()?.id === episode.id"
+        (click)="selectChannel(episode)">
+        <span class="channel-number">CH {{ $index + 1 }}</span>
+        <span class="channel-name">{{ episode.title }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- Login Button -->
+  <div class="remote-footer">
+    <button class="login-btn" (click)="goToLogin()">
+      <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+      </svg>
+      <span>INGRESAR</span>
+    </button>
+  </div>
+</div>

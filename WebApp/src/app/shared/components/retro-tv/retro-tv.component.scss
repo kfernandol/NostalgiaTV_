@@ -1,0 +1,434 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%);
+  font-family: 'VT323', monospace;
+  position: relative;
+}
+
+/* TV Setup */
+.tv-setup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: tvEnter 800ms ease-out;
+}
+
+@keyframes tvEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.tv-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: url('/images/tv-setup.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.7));
+  animation: tvFloat 6s ease-in-out infinite;
+}
+
+@keyframes tvFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.screen-overlay {
+  position: absolute;
+  background: radial-gradient(ellipse at center, #1a1a3e 0%, #0a0a1e 100%);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CRT effects */
+.crt-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px);
+  pointer-events: none;
+  z-index: 3;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100%); }
+}
+
+.crt-glare {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 35% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.tv-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 1rem;
+}
+
+.tv-content.episode-transition {
+  animation: episodeChange 600ms ease-in-out;
+}
+
+@keyframes episodeChange {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.series-logo {
+  font-family: 'Press Start 2P', cursive;
+  font-size: clamp(0.6rem, 1.5vw, 1.5rem);
+  color: #ff6b6b;
+  text-shadow: 0 0 20px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.4), 2px 2px 0 rgba(0, 0, 0, 0.5);
+  margin-bottom: 1rem;
+  animation: glow 2s ease-in-out infinite;
+  letter-spacing: 2px;
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.episode-title {
+  font-size: clamp(0.6rem, 1.3vw, 1.2rem);
+  color: #6bcf7f;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 2px 10px rgba(107, 207, 127, 0.5), 1px 1px 0 rgba(0, 0, 0, 0.5);
+  font-weight: normal;
+}
+
+.episode-year {
+  font-size: clamp(0.5rem, 1.1vw, 1rem);
+  color: #ffd93d;
+  text-shadow: 0 2px 10px rgba(255, 217, 61, 0.5), 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.static-noise {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0px, rgba(255, 255, 255, 0.03) 1px, transparent 2px), repeating-linear-gradient(90deg, transparent 0px, rgba(255, 255, 255, 0.03) 1px, transparent 2px);
+  animation: static 0.2s steps(4) infinite;
+  z-index: 1;
+}
+
+.static-noise.hidden { display: none; }
+
+@keyframes static {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-2px, -2px); }
+  100% { transform: translate(2px, 2px); }
+}
+
+/* Kid section */
+.kid-section {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  width: 45vw;
+  max-width: 400px;
+  z-index: 10;
+  padding-bottom: 1rem;
+  animation: kidEnter 800ms 200ms ease-out backwards;
+}
+
+@keyframes kidEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.kid-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 -10px 20px rgba(0, 0, 0, 0.5));
+  animation: breathing 4s ease-in-out infinite;
+}
+
+@keyframes breathing {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Floor */
+.floor {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 25vh;
+  background: linear-gradient(180deg, transparent 0%, rgba(42, 42, 62, 0.3) 20%, rgba(42, 42, 62, 0.8) 100%), repeating-linear-gradient(90deg, #2a2a3e 0px, #2a2a3e 2px, #32325a 2px, #32325a 4px), repeating-linear-gradient(0deg, #2a2a3e 0px, #2a2a3e 2px, #32325a 2px, #32325a 4px);
+  box-shadow: inset 0 30px 50px rgba(0, 0, 0, 0.5), 0 -10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+  animation: floorPulse 8s ease-in-out infinite;
+}
+
+@keyframes floorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
+}
+
+.floor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 20% 30%, rgba(74, 74, 106, 0.1) 0%, transparent 3%), radial-gradient(circle at 60% 70%, rgba(74, 74, 106, 0.1) 0%, transparent 3%), radial-gradient(circle at 40% 50%, rgba(74, 74, 106, 0.1) 0%, transparent 3%), radial-gradient(circle at 80% 20%, rgba(74, 74, 106, 0.1) 0%, transparent 3%);
+  background-size: 50px 50px;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+.floor::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(107, 207, 127, 0.3) 50%, transparent 100%);
+}
+
+/* Remote Control */
+.remote-control {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(145deg, #3d3d5c, #2a2a3e);
+  border: 3px solid #1a1a2e;
+  border-radius: 20px;
+  padding: 1.5rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.05);
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 100;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  animation: remoteEnter 600ms 400ms ease-out backwards;
+}
+
+@keyframes remoteEnter {
+  from {
+    opacity: 0;
+    transform: translateX(100%) translateY(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(-50%);
+  }
+}
+
+.remote-control::-webkit-scrollbar { width: 6px; }
+.remote-control::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+.remote-control::-webkit-scrollbar-thumb { background: #6bcf7f; border-radius: 3px; }
+
+.remote-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(107, 207, 127, 0.2);
+}
+
+.remote-header h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.65rem;
+  color: #6bcf7f;
+  text-shadow: 0 2px 10px rgba(107, 207, 127, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.remote-led {
+  width: 8px;
+  height: 8px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  margin: 0 auto;
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.8);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.3; }
+}
+
+.channels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.channel-btn {
+  background: linear-gradient(145deg, #2d2d44, #1a1a2e);
+  border: 2px solid #1a1a2e;
+  border-radius: 10px;
+  padding: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #fff;
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.channel-btn:hover {
+  transform: translateX(-5px) scale(1.02);
+  border-color: #6bcf7f;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), 0 0 15px rgba(107, 207, 127, 0.3);
+}
+
+.channel-btn:active {
+  transform: translateX(-5px) scale(0.98);
+}
+
+.channel-btn.active {
+  border-color: #ff6b6b;
+  background: linear-gradient(145deg, #3d3d5c, #2a2a3e);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 107, 107, 0.5);
+  animation: activeChannel 0.5s ease-out;
+}
+
+@keyframes activeChannel {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.channel-number {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.6rem;
+  color: #ffd93d;
+  text-shadow: 0 0 8px rgba(255, 217, 61, 0.6);
+}
+
+.channel-name {
+  color: #6bcf7f;
+  font-size: 0.95rem;
+}
+
+/* Login Button */
+.remote-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(107, 207, 127, 0.2);
+}
+
+.login-btn {
+  width: 100%;
+  background: linear-gradient(145deg, #ff6b6b, #ff4757);
+  border: 2px solid #ff4757;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+.login-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+  background: linear-gradient(145deg, #ff4757, #ff3838);
+}
+
+.login-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+}
+
+.login-icon {
+  width: 16px;
+  height: 16px;
+  animation: loginPulse 2s ease-in-out infinite;
+}
+
+@keyframes loginPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Responsive */
+@media (max-width: 1400px) { .kid-section { width: 40vw; } }
+@media (max-width: 1200px) {
+  .remote-control { width: 180px; padding: 1rem 0.8rem; right: 1rem; }
+  .kid-section { width: 38vw; }
+}
+@media (max-width: 1024px) { .tv-setup { width: 85vw; height: 75vh; } .kid-section { width: 42vw; } }
+@media (max-width: 768px) {
+  .tv-setup { width: 95vw; height: 60vh; top: 30%; }
+  .kid-section, .floor { display: none; }
+  .remote-control {
+    right: auto; left: 50%; top: auto; bottom: 1rem;
+    transform: translateX(-50%); width: 90%; max-width: 500px;
+    max-height: 35vh; padding: 1rem;
+  }
+  .channels-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+}
+@media (max-width: 480px) {
+  .remote-header h3 { font-size: 0.55rem; }
+  .channel-btn { padding: 0.6rem; }
+  .channel-number { font-size: 0.5rem; }
+  .channel-name { font-size: 0.85rem; }
+  .tv-setup { height: 55vh; }
+  .login-btn { font-size: 0.55rem; padding: 0.8rem; }
+}
+@media (min-width: 1920px) {
+  .tv-setup { width: 70vw; height: 80vh; }
+  .remote-control { width: 220px; right: 3rem; }
+}

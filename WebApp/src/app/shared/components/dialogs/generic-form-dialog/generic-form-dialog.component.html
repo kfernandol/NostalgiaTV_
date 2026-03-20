@@ -1,0 +1,56 @@
+<mat-card class="daxa-card border-none d-block"
+    [class.component-dark-theme]="themeService.isDark()"
+    [style.--mat-card-elevated-container-color]="themeService.isDark() ? '#1b232d' : '#ffffff'"
+>
+    <mat-card-header>
+        <mat-card-title>
+            <h5 class="mb-0">{{ isEdit ? 'Edit' : 'New' }} {{ config.title }}</h5>
+        </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <form [formGroup]="form" class="pt-2">
+            @for (field of config.fields; track field.key) {
+                <div class="form-group">
+                    <label class="main-label d-block lh-1 text-black">{{ field.label }}</label>
+                    <mat-form-field class="w-100 mb-13 mt-10">
+                        <mat-label>{{ field.label }}</mat-label>
+                        @switch (field.type) {
+                            @case ('textarea') {
+                                <textarea matInput [formControlName]="field.key" rows="3"></textarea>
+                            }
+                            @case ('number') {
+                                <input matInput type="number" [formControlName]="field.key">
+                            }
+                            @case ('select') {
+                                <mat-select [formControlName]="field.key">
+                                    @for (opt of field.options; track opt.value) {
+                                        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                                    }
+                                </mat-select>
+                            }
+                            @case ('multiselect') {
+                              <mat-select [formControlName]="field.key" multiple>
+                                  @for (opt of field.options; track opt.value) {
+                                      <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                                  }
+                              </mat-select>
+                            }
+                            @default {
+                                <input matInput type="text" [formControlName]="field.key">
+                            }
+                        }
+                        @if (form.get(field.key)!.invalid && form.get(field.key)!.touched) {
+                            <mat-error class="mb-10">{{ field.label }} is required.</mat-error>
+                        }
+                    </mat-form-field>
+                </div>
+            }
+        </form>
+    </mat-card-content>
+    <mat-card-actions align="end">
+        <button mat-button (click)="cancel()">Cancel</button>
+        <button mat-flat-button color="primary" (click)="submit()" [disabled]="form.invalid">
+            {{ isEdit ? 'Save' : 'Create' }}
+        </button>
+    </mat-card-actions>
+</mat-card>

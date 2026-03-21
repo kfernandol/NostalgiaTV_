@@ -1,4 +1,5 @@
 ﻿using ApplicationCore.Interfaces;
+using ApplicationCore.Settings;
 using Infrastructure.BackgroundServices;
 using Infrastructure.Contexts;
 using Infrastructure.Mappings;
@@ -17,6 +18,11 @@ namespace Infrastructure
 
             services.AddDbContext<NostalgiaTVContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
+            //Configurations
+            services.Configure<FileUploadSettings>(configuration.GetSection("FileUpload"));
+
+            //Services
+            services.AddScoped<FileUploadService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ISeriesService, SeriesService>();
             services.AddScoped<IEpisodeService, EpisodeService>();

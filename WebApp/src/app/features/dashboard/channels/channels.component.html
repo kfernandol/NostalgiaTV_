@@ -1,53 +1,76 @@
 <div
-    [class.component-dark-theme]="themeService.isDark()"
-    [class.card-borderd-theme]="themeService.isCardBorder()"
-    [class.rtl-enabled]="themeService.isRTLEnabled()"
+  [class.component-dark-theme]="themeService.isDark()"
+  [class.card-borderd-theme]="themeService.isCardBorder()"
+  [class.rtl-enabled]="themeService.isRTLEnabled()"
 >
-    <div class="breadcrumb-card mb-25 d-md-flex align-items-center justify-content-between">
-        <h5 class="mb-0">Channels</h5>
-        <button mat-flat-button color="primary" (click)="openForm()">
-            <mat-icon>add</mat-icon> New Channel
-        </button>
-    </div>
+  <div class="breadcrumb-card mb-25 d-md-flex align-items-center justify-content-between">
+    <h5 class="mb-0">Channels</h5>
+    <button mat-flat-button color="primary" (click)="openForm()">
+      <mat-icon>add</mat-icon> New Channel
+    </button>
+  </div>
 
-    <mat-card class="daxa-card mb-25 border-radius bg-white border-none d-block">
-        <mat-card-content>
-            <mat-table [dataSource]="channels()">
-                <ng-container matColumnDef="id">
-                    <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
-                    <mat-cell *matCellDef="let c">{{ c.id }}</mat-cell>
-                </ng-container>
+  <mat-card class="daxa-card mb-25 border-radius bg-white border-none d-block">
+    <mat-card-content>
+      <mat-table [dataSource]="channels()">
+        <ng-container matColumnDef="id">
+          <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{ c.id }}</mat-cell>
+        </ng-container>
 
-                <ng-container matColumnDef="name">
-                    <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
-                    <mat-cell *matCellDef="let c">{{ c.name }}</mat-cell>
-                </ng-container>
+        <ng-container matColumnDef="name">
+          <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{ c.name }}</mat-cell>
+        </ng-container>
 
-                <ng-container matColumnDef="isRandom">
-                    <mat-header-cell *matHeaderCellDef>Random</mat-header-cell>
-                    <mat-cell *matCellDef="let c">{{ c.isRandom ? 'Yes' : 'No' }}</mat-cell>
-                </ng-container>
+        <ng-container matColumnDef="logo">
+          <mat-header-cell *matHeaderCellDef>Logo</mat-header-cell>
+          <mat-cell *matCellDef="let c">
+            @if (c.logoPath) {
+                <img [src]="apiUrl + c.logoPath" alt="logo" style="height:32px; border-radius:4px;">
+            } @else {
+                <span>—</span>
+            }
+          </mat-cell>
+        </ng-container>
 
-                <ng-container matColumnDef="series">
-                    <mat-header-cell *matHeaderCellDef>Series</mat-header-cell>
-                    <mat-cell *matCellDef="let c">{{ getSeriesNames(c.seriesIds) }}</mat-cell>
-                </ng-container>
+        <ng-container matColumnDef="history">
+          <mat-header-cell *matHeaderCellDef>History</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{ c.history ?? '—' }}</mat-cell>
+        </ng-container>
 
-                <ng-container matColumnDef="actions">
-                    <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-                    <mat-cell *matCellDef="let c">
-                        <button mat-icon-button (click)="openForm(c)">
-                            <mat-icon>edit</mat-icon>
-                        </button>
-                        <button mat-icon-button color="primary" (click)="assignSeries(c)">
-                            <mat-icon>playlist_add</mat-icon>
-                        </button>
-                    </mat-cell>
-                </ng-container>
+        <ng-container matColumnDef="startDate">
+          <mat-header-cell *matHeaderCellDef>Start Date</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{ c.startDate | date: 'mediumDate' }}</mat-cell>
+        </ng-container>
 
-                <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
-            </mat-table>
-        </mat-card-content>
-    </mat-card>
+        <ng-container matColumnDef="endDate">
+          <mat-header-cell *matHeaderCellDef>End Date</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{
+            c.endDate ? (c.endDate | date: 'mediumDate') : '—'
+          }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="series">
+          <mat-header-cell *matHeaderCellDef>Series</mat-header-cell>
+          <mat-cell *matCellDef="let c">{{ getSeriesNames(c.seriesIds) }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+          <mat-cell *matCellDef="let c">
+            <button mat-icon-button (click)="openForm(c)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="primary" (click)="assignSeries(c)">
+              <mat-icon>playlist_add</mat-icon>
+            </button>
+          </mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns"></mat-row>
+      </mat-table>
+    </mat-card-content>
+  </mat-card>
 </div>

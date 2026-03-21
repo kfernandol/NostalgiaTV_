@@ -15,6 +15,8 @@ import {
   GenericFormDialogComponent,
 } from '../../../shared/components/dialogs/generic-form-dialog/generic-form-dialog.component';
 import { SeriesResponse } from '../../../shared/models/serie.model';
+import { DatePipe } from '@angular/common';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-channels',
@@ -25,6 +27,7 @@ import { SeriesResponse } from '../../../shared/models/serie.model';
     MatDialogModule,
     MatSnackBarModule,
     MatCardModule,
+    DatePipe,
   ],
   templateUrl: './channels.component.html',
   styleUrl: './channels.component.scss',
@@ -32,7 +35,8 @@ import { SeriesResponse } from '../../../shared/models/serie.model';
 export class ChannelsComponent implements OnInit {
   channels = signal<ChannelResponse[]>([]);
   series = signal<SeriesResponse[]>([]);
-  displayedColumns = ['id', 'name', 'isRandom', 'series', 'actions'];
+  displayedColumns = ['id', 'name', 'logo', 'history', 'startDate', 'endDate', 'series', 'actions'];
+  apiUrl = environment.apiUrl;
 
   constructor(
     private channelsService: ChannelsService,
@@ -61,23 +65,18 @@ export class ChannelsComponent implements OnInit {
     const config: DialogConfig = {
       title: 'Channel',
       fields: [
+        { key: 'name', label: 'Name', type: 'text', validators: [Validators.required] },
+        { key: 'logo', label: 'Logo', type: 'file' },
+        { key: 'history', label: 'History', type: 'textarea' },
         {
-          key: 'name',
-          label: 'Name',
-          type: 'text',
-          validators: [Validators.required, Validators.maxLength(100)],
+          key: 'startDate',
+          label: 'Start Date',
+          type: 'datepicker',
+          validators: [Validators.required],
         },
-        {
-          key: 'isRandom',
-          label: 'Random Playback',
-          type: 'select',
-          options: [
-            { value: true, label: 'Yes' },
-            { value: false, label: 'No' },
-          ],
-        },
+        { key: 'endDate', label: 'End Date', type: 'datepicker' },
       ],
-      data: channel ?? null,
+      data: channel ? { ...channel, logo: environment.apiUrl + channel.logoPath } : null,
     };
 
     const dialogRef = this.dialog.open(GenericFormDialogComponent, {
@@ -87,10 +86,18 @@ export class ChannelsComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (!result) return;
+      const payload = result.isMultipart ? result.formData : result.data;
+
       if (channel) {
-        // update no implementado aun
+        this.channelsService.update(channel.id, payload).subscribe({
+          next: (updated) => {
+            this.channels.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+            this.showSuccess('Channel updated');
+          },
+          error: () => this.showError('Error updating channel'),
+        });
       } else {
-        this.channelsService.create(result).subscribe({
+        this.channelsService.create(payload).subscribe({
           next: (created) => {
             this.channels.update((list) => [...list, created]);
             this.showSuccess('Channel created');

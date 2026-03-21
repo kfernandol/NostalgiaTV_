@@ -43,6 +43,7 @@ namespace WebApi
             app.UseAuthorization();
             app.UseRateLimiter();
             app.MapControllers();
+            app.UseStaticFiles();
             app.Run();
         }
     }

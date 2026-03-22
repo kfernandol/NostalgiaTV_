@@ -25,15 +25,25 @@ namespace Infrastructure.Services
 
         public async Task<RolResponse> CreateAsync(RolRequest request)
         {
-            var menus = await _context.Menus
+            var selectedMenus = await _context.Menus
                 .Where(m => request.MenuIds.Contains(m.Id))
+                .ToListAsync();
+
+            var parentIds = selectedMenus
+                .Where(m => m.ParentId.HasValue)
+                .Select(m => m.ParentId!.Value)
+                .Distinct()
+                .ToList();
+
+            var parentMenus = await _context.Menus
+                .Where(m => parentIds.Contains(m.Id))
                 .ToListAsync();
 
             var rol = new Rol
             {
                 Name = request.Name,
                 Description = request.Description,
-                Menus = menus
+                Menus = selectedMenus.Union(parentMenus).ToList()
             };
 
             _context.Roles.Add(rol);
@@ -43,16 +53,28 @@ namespace Infrastructure.Services
 
         public async Task<RolResponse> UpdateAsync(int id, RolRequest request)
         {
-            var rol = await _context.Roles
-                .Include(r => r.Menus)
-                .FirstOrDefaultAsync(r => r.Id == id)
+            var rol = await _context.Roles.Include(r => r.Menus).FirstOrDefaultAsync(r => r.Id == id)
                 ?? throw new NotFoundException($"Rol {id} not found");
 
             rol.Name = request.Name;
             rol.Description = request.Description;
-            rol.Menus = await _context.Menus
+
+            // Get selected menus and their parents
+            var selectedMenus = await _context.Menus
                 .Where(m => request.MenuIds.Contains(m.Id))
                 .ToListAsync();
+
+            var parentIds = selectedMenus
+                .Where(m => m.ParentId.HasValue)
+                .Select(m => m.ParentId!.Value)
+                .Distinct()
+                .ToList();
+
+            var parentMenus = await _context.Menus
+                .Where(m => parentIds.Contains(m.Id))
+                .ToListAsync();
+
+            rol.Menus = selectedMenus.Union(parentMenus).ToList();
 
             await _context.SaveChangesAsync();
             return rol.Adapt<RolResponse>();

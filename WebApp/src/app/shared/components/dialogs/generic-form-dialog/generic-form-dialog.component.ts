@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { SimpleFuComponent } from '../../simple-fu/simple-fu.component';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { JsonPipe } from '@angular/common';
 
 export interface DialogField {
   key: string;
@@ -41,6 +42,7 @@ export interface DialogConfig<T = any> {
     MatDatepickerModule,
     MatNativeDateModule,
     SimpleFuComponent,
+    JsonPipe
   ],
   templateUrl: './generic-form-dialog.component.html',
 })
@@ -57,8 +59,10 @@ export class GenericFormDialogComponent {
   ) {
     this.isEdit = !!config.data;
     const controls: Record<string, any> = {};
+
     config.fields.forEach((field) => {
       controls[field.key] = [config.data?.[field.key] ?? '', field.validators ?? []];
+      console.log(field.key, 'validators:', field.validators);
 
       // Load existing preview for file fields on edit
       if (field.type === 'file' && config.data?.[field.key]) {

@@ -36,7 +36,7 @@ namespace Infrastructure.Services
             if (!VerifyPassword(request.Password, user.PasswordHash))
                 throw new UnauthorizedException("Invalid username or password");
 
-            await GenerateAndSetTokens(user, response, ipAddress);
+            await GenerateAndSetTokens(user, response, ipAddress, request.RememberMe);
         }
 
         public async Task RefreshTokenAsync(HttpRequest request, HttpResponse response, string ipAddress)
@@ -86,10 +86,12 @@ namespace Infrastructure.Services
             response.Cookies.Delete("refresh_token");
         }
 
-        private async Task<(string refreshToken, string accessToken)> GenerateAndSetTokens(User user, HttpResponse response, string ipAddress)
+        private async Task<(string refreshToken, string accessToken)> GenerateAndSetTokens(User user, HttpResponse response, string ipAddress, bool rememberMe = false)
         {
             var accessToken = GenerateJwt(user);
             var refreshTokenValue = GenerateRefreshTokenValue();
+
+            var refreshExpiry = rememberMe ? DateTime.UtcNow.AddDays(30) : DateTime.UtcNow.AddDays(7);
 
             _context.RefreshTokens.Add(new RefreshToken
             {
@@ -97,24 +99,17 @@ namespace Infrastructure.Services
                 UserId = user.Id,
                 IpAddress = ipAddress,
                 CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
+                ExpiresAt = refreshExpiry
             });
 
             await _context.SaveChangesAsync();
-
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict
-            };
 
             response.Cookies.Append("access_token", accessToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddHours(8)
+                Expires = rememberMe ? DateTimeOffset.UtcNow.AddDays(30) : null
             });
 
             response.Cookies.Append("refresh_token", refreshTokenValue, new CookieOptions
@@ -122,7 +117,7 @@ namespace Infrastructure.Services
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddDays(7)
+                Expires = rememberMe ? DateTimeOffset.UtcNow.AddDays(30) : null
             });
 
             return (refreshTokenValue, accessToken);

@@ -25,7 +25,27 @@
 
                 <ng-container matColumnDef="description">
                     <mat-header-cell *matHeaderCellDef>Description</mat-header-cell>
-                    <mat-cell *matCellDef="let s">{{ s.description }}</mat-cell>
+                    <mat-cell *matCellDef="let s">{{ s.description ?? '—' }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="startDate">
+                    <mat-header-cell *matHeaderCellDef>Start Date</mat-header-cell>
+                    <mat-cell *matCellDef="let s">{{ s.startDate | date:'mediumDate' }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="endDate">
+                    <mat-header-cell *matHeaderCellDef>End Date</mat-header-cell>
+                    <mat-cell *matCellDef="let s">{{ s.endDate ? (s.endDate | date:'mediumDate') : '—' }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="rating">
+                    <mat-header-cell *matHeaderCellDef>Rating</mat-header-cell>
+                    <mat-cell *matCellDef="let s">{{ s.rating ?? '—' }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="categories">
+                    <mat-header-cell *matHeaderCellDef>Categories</mat-header-cell>
+                    <mat-cell *matCellDef="let s">{{ getCategoryNames(s.categoryIds) }}</mat-cell>
                 </ng-container>
 
                 <ng-container matColumnDef="actions">
@@ -33,6 +53,9 @@
                     <mat-cell *matCellDef="let s">
                         <button mat-icon-button (click)="openForm(s)">
                             <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="primary" (click)="assignCategories(s)">
+                            <mat-icon>category</mat-icon>
                         </button>
                         <button mat-icon-button color="warn" (click)="delete(s.id)">
                             <mat-icon>delete</mat-icon>

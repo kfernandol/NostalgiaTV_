@@ -10,6 +10,7 @@ namespace ApplicationCore.Interfaces
         Task<UserResponse> GetByIdAsync(int id);
         Task<List<UserResponse>> GetAllAsync();
         Task<UserResponse> CreateAsync(UserRequest request);
+        Task<UserResponse> UpdateAsync(int id, UserRequest request);
         Task DeleteAsync(int id);
     }
 }

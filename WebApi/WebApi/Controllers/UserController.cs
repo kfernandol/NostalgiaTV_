@@ -31,6 +31,9 @@ namespace WebApi.Controllers
             return NoContent();
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, UserRequest request) => Ok(await _userService.UpdateAsync(id, request));
+
         [HttpGet("me")]
         public async Task<IActionResult> GetMe()
         {

@@ -4,37 +4,32 @@
     [class.rtl-enabled]="themeService.isRTLEnabled()"
 >
     <div class="breadcrumb-card mb-25 d-md-flex align-items-center justify-content-between">
-        <h5 class="mb-0">Users</h5>
+        <h5 class="mb-0">Categories</h5>
         <button mat-flat-button color="primary" (click)="openForm()">
-            <mat-icon>add</mat-icon> New User
+            <mat-icon>add</mat-icon> New Category
         </button>
     </div>
 
     <mat-card class="daxa-card mb-25 border-radius bg-white border-none d-block">
         <mat-card-content>
-            <mat-table [dataSource]="users()">
+            <mat-table [dataSource]="categories()">
                 <ng-container matColumnDef="id">
                     <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
-                    <mat-cell *matCellDef="let u">{{ u.id }}</mat-cell>
+                    <mat-cell *matCellDef="let c">{{ c.id }}</mat-cell>
                 </ng-container>
 
-                <ng-container matColumnDef="username">
-                    <mat-header-cell *matHeaderCellDef>Username</mat-header-cell>
-                    <mat-cell *matCellDef="let u">{{ u.username }}</mat-cell>
-                </ng-container>
-
-                <ng-container matColumnDef="rol">
-                    <mat-header-cell *matHeaderCellDef>Role</mat-header-cell>
-                    <mat-cell *matCellDef="let u">{{ u.rol.name }}</mat-cell>
+                <ng-container matColumnDef="name">
+                    <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+                    <mat-cell *matCellDef="let c">{{ c.name }}</mat-cell>
                 </ng-container>
 
                 <ng-container matColumnDef="actions">
                     <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
-                    <mat-cell *matCellDef="let u">
-                        <button mat-icon-button (click)="openForm(u)">
+                    <mat-cell *matCellDef="let c">
+                        <button mat-icon-button (click)="openForm(c)">
                             <mat-icon>edit</mat-icon>
                         </button>
-                        <button mat-icon-button color="warn" (click)="delete(u.id)">
+                        <button mat-icon-button color="warn" (click)="delete(c.id)">
                             <mat-icon>delete</mat-icon>
                         </button>
                     </mat-cell>

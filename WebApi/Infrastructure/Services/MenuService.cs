@@ -35,5 +35,12 @@ namespace Infrastructure.Services
 
             return parents;
         }
+
+        public async Task<List<MenuResponse>> GetAllAsync()
+        {
+            var menus = await _context.Menus.ToListAsync();
+            return menus.Adapt<List<MenuResponse>>();
+        }
+
     }
 }

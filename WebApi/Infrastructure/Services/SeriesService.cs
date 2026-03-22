@@ -11,10 +11,12 @@ namespace Infrastructure.Services
     public class SeriesService : ISeriesService
     {
         private readonly NostalgiaTVContext _context;
+        private readonly FileUploadService _fileUploadService;
 
-        public SeriesService(NostalgiaTVContext context)
+        public SeriesService(NostalgiaTVContext context, FileUploadService fileUploadService)
         {
             _context = context;
+            _fileUploadService = fileUploadService;
         }
 
         public async Task<List<SeriesResponse>> GetAllAsync() => await _context.Series.ProjectToType<SeriesResponse>().ToListAsync();
@@ -29,6 +31,10 @@ namespace Infrastructure.Services
         public async Task<SeriesResponse> CreateAsync(SeriesRequest request)
         {
             var series = request.Adapt<Series>();
+
+            if (request.Logo != null)
+                series.LogoPath = await _fileUploadService.UploadAsync(request.Logo, "series");
+
             _context.Series.Add(series);
             await _context.SaveChangesAsync();
             return series.Adapt<SeriesResponse>();
@@ -38,7 +44,12 @@ namespace Infrastructure.Services
         {
             var series = await _context.Series.FindAsync(id)
                 ?? throw new NotFoundException($"Series {id} not found");
+
             request.Adapt(series);
+
+            if (request.Logo != null)
+                series.LogoPath = await _fileUploadService.UploadAsync(request.Logo, "series");
+
             await _context.SaveChangesAsync();
             return series.Adapt<SeriesResponse>();
         }
@@ -49,6 +60,21 @@ namespace Infrastructure.Services
                 ?? throw new NotFoundException($"Series {id} not found");
             _context.Series.Remove(series);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<SeriesResponse> AssignCategoriesAsync(int seriesId, List<int> categoryIds)
+        {
+            var series = await _context.Series
+                .Include(s => s.Categories)
+                .FirstOrDefaultAsync(s => s.Id == seriesId)
+                ?? throw new NotFoundException($"Series {seriesId} not found");
+
+            series.Categories = await _context.Categories
+                .Where(c => categoryIds.Contains(c.Id))
+                .ToListAsync();
+
+            await _context.SaveChangesAsync();
+            return series.Adapt<SeriesResponse>();
         }
     }
 }

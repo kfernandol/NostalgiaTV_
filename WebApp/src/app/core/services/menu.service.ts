@@ -7,18 +7,24 @@ import { switchMap, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class MenuService {
-    private readonly apiUrl = `${environment.apiUrl}/api/v1`;
+  private readonly apiUrl = `${environment.apiUrl}/api/v1`;
 
-    currentUser = signal<UserResponse | null>(null);
-    menus = signal<MenuResponse[]>([]);
+  currentUser = signal<UserResponse | null>(null);
+  menus = signal<MenuResponse[]>([]);
 
-    constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {}
 
-    loadCurrentUser() {
-      return this.http.get<UserResponse>(`${this.apiUrl}/users/me`, { withCredentials: true }).pipe(
-          tap(user => this.currentUser.set(user)),
-          switchMap(() => this.http.get<MenuResponse[]>(`${this.apiUrl}/menus`, { withCredentials: true })),
-          tap(menus => this.menus.set(menus))
-      );
-    }
+  loadCurrentUser() {
+    return this.http.get<UserResponse>(`${this.apiUrl}/users/me`, { withCredentials: true }).pipe(
+      tap((user) => this.currentUser.set(user)),
+      switchMap(() =>
+        this.http.get<MenuResponse[]>(`${this.apiUrl}/menus`, { withCredentials: true }),
+      ),
+      tap((menus) => this.menus.set(menus)),
+    );
+  }
+
+  getAllMenus() {
+    return this.http.get<MenuResponse[]>(`${this.apiUrl}/menus/all`, { withCredentials: true });
+  }
 }

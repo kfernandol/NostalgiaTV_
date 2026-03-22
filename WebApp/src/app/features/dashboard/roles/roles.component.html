@@ -1,1 +1,48 @@
-<p>roles works!</p>
+<div
+    [class.component-dark-theme]="themeService.isDark()"
+    [class.card-borderd-theme]="themeService.isCardBorder()"
+    [class.rtl-enabled]="themeService.isRTLEnabled()"
+>
+    <div class="breadcrumb-card mb-25 d-md-flex align-items-center justify-content-between">
+        <h5 class="mb-0">Roles</h5>
+        <button mat-flat-button color="primary" (click)="openForm()">
+            <mat-icon>add</mat-icon> New Role
+        </button>
+    </div>
+
+    <mat-card class="daxa-card mb-25 border-radius bg-white border-none d-block">
+        <mat-card-content>
+            <mat-table [dataSource]="roles()">
+                <ng-container matColumnDef="id">
+                    <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
+                    <mat-cell *matCellDef="let r">{{ r.id }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="name">
+                    <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
+                    <mat-cell *matCellDef="let r">{{ r.name }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="description">
+                    <mat-header-cell *matHeaderCellDef>Description</mat-header-cell>
+                    <mat-cell *matCellDef="let r">{{ r.description ?? '—' }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                    <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+                    <mat-cell *matCellDef="let r">
+                        <button mat-icon-button (click)="openForm(r)">
+                            <mat-icon>edit</mat-icon>
+                        </button>
+                        <button mat-icon-button color="warn" (click)="delete(r.id)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </mat-cell>
+                </ng-container>
+
+                <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+                <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+            </mat-table>
+        </mat-card-content>
+    </mat-card>
+</div>

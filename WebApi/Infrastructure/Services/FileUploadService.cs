@@ -17,7 +17,7 @@ namespace Infrastructure.Services
             _settings = settings.Value;
         }
 
-        public async Task<string> UploadAsync(IFormFile file)
+        public async Task<string> UploadAsync(IFormFile file, string folder = "general")
         {
             var maxBytes = _settings.MaxFileSizeMB * 1024 * 1024;
             if (file.Length > maxBytes)
@@ -28,14 +28,15 @@ namespace Infrastructure.Services
                 throw new BadRequestException($"File type '{ext}' is not allowed.");
 
             var fileName = $"{Guid.NewGuid()}{ext}";
-            var fullPath = Path.Combine(_settings.StoragePath, fileName);
+            var storagePath = Path.Combine(_settings.StoragePath, folder);
+            var fullPath = Path.Combine(storagePath, fileName);
 
-            Directory.CreateDirectory(_settings.StoragePath);
+            Directory.CreateDirectory(storagePath);
 
             using var stream = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(stream);
 
-            return $"/uploads/channels/{fileName}";
+            return $"/uploads/{folder}/{fileName}";
         }
     }
 }

@@ -9,43 +9,55 @@ import { CustomizerSettingsService } from '../../../../shared/components/customi
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
-    selector: 'app-sign-in',
-    imports: [RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, MatCheckboxModule, ReactiveFormsModule],
-    templateUrl: './sign-in.component.html',
-    styleUrl: './sign-in.component.scss'
+  selector: 'app-sign-in',
+  imports: [
+    RouterLink,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    ReactiveFormsModule,
+  ],
+  templateUrl: './sign-in.component.html',
+  styleUrl: './sign-in.component.scss',
 })
 export class SignInComponent {
+  hide = true;
+  authForm: FormGroup;
+  errorMessage = '';
 
-    hide = true;
-    authForm: FormGroup;
-    errorMessage = '';
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private authService: AuthService,
+    public themeService: CustomizerSettingsService,
+  ) {
+    this.authForm = this.fb.group({
+      username: ['', Validators.required],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      rememberMe: [false],
+    });
 
-    constructor(
-        private fb: FormBuilder,
-        private router: Router,
-        private authService: AuthService,
-        public themeService: CustomizerSettingsService
-    ) {
-        this.authForm = this.fb.group({
-            username: ['', [Validators.required]],
-            password: ['', [Validators.required, Validators.minLength(8)]]
-        });
+    if (authService.isAuthenticated()) this.router.navigate(['/dashboard']);
+  }
 
-        if(authService.isAuthenticated())
-          this.router.navigate(['/dashboard'])
+  onSubmit() {
+    if (this.authForm.invalid) return;
+    const { rememberMe, ...credentials } = this.authForm.value;
+    if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+    } else {
+        localStorage.removeItem('rememberMe');
+        sessionStorage.setItem('sessionActive', 'true');
     }
-
-    onSubmit() {
-        if (this.authForm.invalid) return;
-
-        this.authService.login(this.authForm.value).subscribe({
-            next: () => {
-                this.authService.isAuthenticated.set(true);
-                this.router.navigate(['/dashboard']);
-            },
-            error: () => {
-                this.errorMessage = 'Invalid username or password.';
-            }
-        });
-    }
+    this.authService.login(credentials).subscribe({
+      next: () => {
+        this.authService.isAuthenticated.set(true);
+        this.router.navigate(['/dashboard']);
+      },
+      error: () => {
+        this.errorMessage = 'Invalid username or password.';
+      },
+    });
+  }
 }

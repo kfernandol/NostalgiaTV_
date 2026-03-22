@@ -9,7 +9,12 @@ namespace ApplicationCore.Entities
         public int Id { get; set; }
         public string Name { get; set; }
         public string? Description { get; set; }
-
+        public string? History { get; set; }
+        public DateOnly StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public string? LogoPath { get; set; }
+        public float? Rating { get; set; }
+        public ICollection<Category> Categories { get; set; } = [];
         public ICollection<Episode> Episodes { get; set; } = [];
         public ICollection<Channel> Channels { get; set; } = [];
     }

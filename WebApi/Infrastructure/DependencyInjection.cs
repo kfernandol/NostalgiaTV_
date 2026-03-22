@@ -25,6 +25,7 @@ namespace Infrastructure
             services.AddScoped<FileUploadService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ISeriesService, SeriesService>();
+            services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IEpisodeService, EpisodeService>();
             services.AddScoped<IChannelService, ChannelService>();
             services.AddScoped<IRolService, RolService>();

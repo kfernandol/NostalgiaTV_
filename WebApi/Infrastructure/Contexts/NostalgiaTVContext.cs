@@ -16,6 +16,7 @@ namespace Infrastructure.Contexts
         public DbSet<Menu> Menus { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Series> Series { get; set; }
+        public DbSet<Category> Categories { get; set; }
         public DbSet<Episode> Episodes { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelState> ChannelStates { get; set; }
@@ -28,6 +29,11 @@ namespace Infrastructure.Contexts
                 .HasMany(m => m.Roles)
                 .WithMany(r => r.Menus)
                 .UsingEntity("MenuRol");
+
+            modelBuilder.Entity<Series>()
+                .HasMany(s => s.Categories)
+                .WithMany(c => c.Series)
+                .UsingEntity(j => j.ToTable("SeriesCategories"));
 
             // Seed Rol
             modelBuilder.Entity<Rol>().HasData(new Rol
@@ -50,7 +56,8 @@ namespace Infrastructure.Contexts
                 // Hijos de Contenido
                 new Menu { Id = 3, Name = "Series", Caption = "Series", Icon = "movie", Url = "/dashboard/series", IsVisible = true, SortOrder = 1, ParentId = 1 },
                 new Menu { Id = 4, Name = "Episodes", Caption = "Episodios", Icon = "video_library", Url = "/dashboard/episodes", IsVisible = true, SortOrder = 2, ParentId = 1 },
-                new Menu { Id = 5, Name = "Channels", Caption = "Canales", Icon = "live_tv", Url = "/dashboard/channels", IsVisible = true, SortOrder = 3, ParentId = 1 }
+                new Menu { Id = 5, Name = "Channels", Caption = "Canales", Icon = "live_tv", Url = "/dashboard/channels", IsVisible = true, SortOrder = 3, ParentId = 1 },
+                new Menu { Id = 8, Name = "Categories", Caption = "Categorías", Icon = "category", Url = "/dashboard/categories", IsVisible = true, SortOrder = 4, ParentId = 1 }
 
             );
 
@@ -61,7 +68,8 @@ namespace Infrastructure.Contexts
                 new { MenusId = 4, RolesId = 1 },
                 new { MenusId = 5, RolesId = 1 },
                 new { MenusId = 6, RolesId = 1 },
-                new { MenusId = 7, RolesId = 1 }
+                new { MenusId = 7, RolesId = 1 },
+                new { MenusId = 8, RolesId = 1 }
             );
 
             // Seed User

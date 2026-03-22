@@ -4,6 +4,7 @@ using Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(NostalgiaTVContext))]
-    partial class NostalgiaTVContextModelSnapshot : ModelSnapshot
+    [Migration("20260321063837_AddCategoriesAndSeriesFields")]
+    partial class AddCategoriesAndSeriesFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,17 +244,6 @@ namespace Infrastructure.Migrations
                             ParentId = 1,
                             SortOrder = 3,
                             Url = "/dashboard/channels"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Caption = "Categorías",
-                            Icon = "category",
-                            IsVisible = true,
-                            Name = "Categories",
-                            ParentId = 1,
-                            SortOrder = 4,
-                            Url = "/dashboard/categories"
                         });
                 });
 
@@ -339,7 +331,7 @@ namespace Infrastructure.Migrations
                     b.Property<string>("History")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LogoPath")
+                    b.Property<string>("LogoUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -470,11 +462,6 @@ namespace Infrastructure.Migrations
                         new
                         {
                             MenusId = 7,
-                            RolesId = 1
-                        },
-                        new
-                        {
-                            MenusId = 8,
                             RolesId = 1
                         });
                 });

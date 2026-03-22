@@ -7,23 +7,21 @@
                 [class.component-dark-theme]="themeService.isDark()"
             >
                 <div class="title text-center">
-                    <h3>
-                        Welcome To Daxa
-                    </h3>
+                    <h3>NostalgiaTV</h3>
                     <p class="ml-auto mr-auto">
-                        Thank you for using Daxa admin template.
+                        Your session has ended. See you next time!
                     </p>
                 </div>
                 <div class="admin text-center">
                     <div class="logo position-relative rounded-circle">
-                        <img src="images/logo.svg" alt="logo">
+                        <img src="images/logo.svg" alt="NostalgiaTV">
                     </div>
                     <span class="d-block fw-medium">
-                        You Are Logged out
+                        You are logged out
                     </span>
                 </div>
-                <a routerLink="/authentication" mat-button class="btn">
-                    Sign In
+                <a routerLink="/dashboard/login" mat-button class="btn">
+                    Sign In again
                 </a>
             </div>
         </div>

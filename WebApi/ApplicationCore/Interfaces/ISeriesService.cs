@@ -12,5 +12,6 @@ namespace ApplicationCore.Interfaces
         Task<SeriesResponse> CreateAsync(SeriesRequest request);
         Task<SeriesResponse> UpdateAsync(int id, SeriesRequest request);
         Task DeleteAsync(int id);
+        Task<SeriesResponse> AssignCategoriesAsync(int seriesId, List<int> categoryIds);
     }
 }

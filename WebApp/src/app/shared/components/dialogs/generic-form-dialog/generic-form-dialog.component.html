@@ -83,10 +83,26 @@
                   <input matInput type="text" [formControlName]="field.key" />
                 }
               }
-              @if (form.get(field.key)!.invalid && form.get(field.key)!.touched) {
-                <mat-error>{{ field.label }} is required.</mat-error>
-              }
             </mat-form-field>
+            @if (form.get(field.key)!.invalid && form.get(field.key)!.touched) {
+              @if (form.get(field.key)!.hasError('required')) {
+                <span class="text-danger" style="font-size: 12px"
+                  >{{ field.label }} is required.</span
+                >
+              }
+              @if (form.get(field.key)!.hasError('minlength')) {
+                <span class="text-danger" style="font-size: 12px"
+                  >{{ field.label }} must be at least
+                  {{ form.get(field.key)!.getError('minlength').requiredLength }} characters.</span
+                >
+              }
+              @if (form.get(field.key)!.hasError('maxlength')) {
+                <span class="text-danger" style="font-size: 12px"
+                  >{{ field.label }} must be at most
+                  {{ form.get(field.key)!.getError('maxlength').requiredLength }} characters.</span
+                >
+              }
+            }
           }
         </div>
       }

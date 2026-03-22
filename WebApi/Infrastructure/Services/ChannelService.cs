@@ -27,7 +27,7 @@ namespace Infrastructure.Services
             string logoPath = string.Empty;
 
             if(request.Logo != null)
-                logoPath = await _fileUploadService.UploadAsync(request.Logo);
+                logoPath = await _fileUploadService.UploadAsync(request.Logo, "channels");
 
             var channel = new Channel
             {
@@ -68,7 +68,7 @@ namespace Infrastructure.Services
             channel.EndDate = request.EndDate;
 
             if (request.Logo != null)
-                channel.LogoPath = await _fileUploadService.UploadAsync(request.Logo);
+                channel.LogoPath = await _fileUploadService.UploadAsync(request.Logo, "channels");
 
             await _context.SaveChangesAsync();
             return channel.Adapt<ChannelResponse>();

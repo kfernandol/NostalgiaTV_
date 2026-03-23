@@ -14,6 +14,8 @@ namespace ApplicationCore.Entities
         public DateOnly? EndDate { get; set; }
         public string? LogoPath { get; set; }
         public float? Rating { get; set; }
+        public int Seasons { get; set; }
+        public string? FolderPath { get; set; }
         public ICollection<Category> Categories { get; set; } = [];
         public ICollection<Episode> Episodes { get; set; } = [];
         public ICollection<Channel> Channels { get; set; } = [];

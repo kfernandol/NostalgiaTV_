@@ -40,5 +40,8 @@ namespace WebApi.Controllers
 
         [HttpPost("{id}/categories")]
         public async Task<IActionResult> AssignCategories(int id, [FromBody] List<int> categoryIds) => Ok(await _seriesService.AssignCategoriesAsync(id, categoryIds));
+
+        [HttpPost("{id}/scan")]
+        public async Task<IActionResult> Scan(int id) => Ok(await _seriesService.ScanFolderAsync(id));
     }
 }

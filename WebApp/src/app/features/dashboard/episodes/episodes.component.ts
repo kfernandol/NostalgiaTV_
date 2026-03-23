@@ -8,7 +8,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
-import { Validators } from '@angular/forms';
 import { EpisodesService } from './episodes.service';
 import { SeriesService } from '../series/series.service';
 import { EpisodeResponse } from '../../../shared/models/episode.model';
@@ -26,8 +25,15 @@ export class EpisodesComponent implements OnInit {
 
     episodes = signal<EpisodeResponse[]>([]);
     series = signal<SeriesResponse[]>([]);
+    episodeTypes = signal<{ id: number; name: string }[]>([
+        { id: 1, name: 'Regular' },
+        { id: 2, name: 'Special' },
+        { id: 3, name: 'Christmas Special' },
+        { id: 4, name: 'Halloween Special' },
+        { id: 5, name: 'Movie' }
+    ]);
     selectedSeriesId = signal<number | null>(null);
-    displayedColumns = ['id', 'order', 'title', 'filePath', 'actions'];
+    displayedColumns = ['id', 'season', 'title', 'type', 'filePath', 'actions'];
 
     constructor(
         private episodesService: EpisodesService,
@@ -46,44 +52,69 @@ export class EpisodesComponent implements OnInit {
 
     onSeriesChange(seriesId: number) {
         this.selectedSeriesId.set(seriesId);
+        this.loadEpisodes(seriesId);
+    }
+
+    loadEpisodes(seriesId: number) {
         this.episodesService.getBySeries(seriesId).subscribe({
             next: data => this.episodes.set(data),
             error: () => this.showError('Error loading episodes')
         });
     }
 
-    openForm() {
+    scan() {
         if (!this.selectedSeriesId()) {
             this.showError('Select a series first');
             return;
         }
+        this.episodesService.scan(this.selectedSeriesId()!).subscribe({
+            next: data => {
+                this.episodes.set(data);
+                this.showSuccess('Episodes synced from folder');
+            },
+            error: () => this.showError('Error scanning folder')
+        });
+    }
+
+    changeType(episode: EpisodeResponse) {
+        // Only allow changing type for non-regular episodes
+        const allowedTypes = this.episodeTypes().filter(t =>
+            t.id !== 1 && t.id !== 5 // exclude Regular and Movie
+        );
 
         const config: DialogConfig = {
-            title: 'Episode',
+            title: 'Change Episode Type',
             fields: [
-                { key: 'title', label: 'Title', type: 'text', validators: [Validators.required, Validators.maxLength(100)] },
-                { key: 'filePath', label: 'File Path', type: 'text', validators: [Validators.required] },
-                { key: 'order', label: 'Order', type: 'number', validators: [Validators.required, Validators.min(1)] }
+                {
+                    key: 'episodeTypeId',
+                    label: 'Type',
+                    type: 'select',
+                    options: allowedTypes.map(t => ({ value: t.id, label: t.name }))
+                }
             ],
-            data: null
+            data: { episodeTypeId: episode.episodeTypeId }
         };
 
         const dialogRef = this.dialog.open(GenericFormDialogComponent, {
-            width: '500px',
-            data: config
+            width: '400px',
+            data: config,
+            panelClass: this.themeService.isDark() ? 'dark-theme' : ''
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            if (!result) return;
-            const request = { ...result, seriesId: this.selectedSeriesId() };
-            this.episodesService.create(request).subscribe({
-                next: created => {
-                    this.episodes.update(list => [...list, created]);
-                    this.showSuccess('Episode created');
-                },
-                error: () => this.showError('Error creating episode')
-            });
+          if (!result) return;
+          this.episodesService.update(episode.id, { episodeTypeId: result.data.episodeTypeId }).subscribe({
+              next: updated => {
+                  this.episodes.update(list => list.map(e => e.id === updated.id ? updated : e));
+                  this.showSuccess('Episode type updated');
+              },
+              error: () => this.showError('Error updating episode type')
+          });
         });
+    }
+
+    isSpecial(episode: EpisodeResponse) {
+        return episode.episodeTypeId === 2 || episode.episodeTypeId === 3 || episode.episodeTypeId === 4;
     }
 
     private showSuccess(msg: string) {

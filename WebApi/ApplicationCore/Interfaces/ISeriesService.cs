@@ -1,4 +1,5 @@
-﻿using ApplicationCore.DTOs.Series;
+﻿using ApplicationCore.DTOs.Episode;
+using ApplicationCore.DTOs.Series;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,5 +14,6 @@ namespace ApplicationCore.Interfaces
         Task<SeriesResponse> UpdateAsync(int id, SeriesRequest request);
         Task DeleteAsync(int id);
         Task<SeriesResponse> AssignCategoriesAsync(int seriesId, List<int> categoryIds);
+        Task<List<EpisodeResponse>> ScanFolderAsync(int seriesId);
     }
 }

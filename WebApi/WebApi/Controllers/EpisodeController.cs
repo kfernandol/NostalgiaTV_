@@ -21,5 +21,9 @@ namespace WebApi.Controllers
 
         [HttpPost]
         public async Task<IActionResult> Create(EpisodeRequest request) => Ok(await _episodeService.CreateAsync(request));
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, UpdateEpisodeTypeRequest request) => Ok(await _episodeService.UpdateAsync(id, request));
+
     }
 }

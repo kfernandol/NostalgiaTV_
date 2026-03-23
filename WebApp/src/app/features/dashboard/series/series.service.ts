@@ -17,11 +17,11 @@ export class SeriesService {
     return this.http.get<SeriesResponse>(`${this.apiUrl}/${id}`, { withCredentials: true });
   }
 
-  create(request: SeriesRequest) {
+  create(request: FormData) {
     return this.http.post<SeriesResponse>(this.apiUrl, request, { withCredentials: true });
   }
 
-  update(id: number, request: SeriesRequest) {
+  update(id: number, request: FormData) {
     return this.http.put<SeriesResponse>(`${this.apiUrl}/${id}`, request, {
       withCredentials: true,
     });

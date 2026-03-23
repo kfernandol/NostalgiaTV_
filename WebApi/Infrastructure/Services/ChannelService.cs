@@ -12,11 +12,13 @@ namespace Infrastructure.Services
     {
         private readonly NostalgiaTVContext _context;
         private readonly FileUploadService _fileUploadService;
+        private readonly ChannelBroadcastService _broadcastService;
 
-        public ChannelService(NostalgiaTVContext context, FileUploadService fileUploadService)
+        public ChannelService(NostalgiaTVContext context, FileUploadService fileUploadService, ChannelBroadcastService broadcastService)
         {
             _context = context;
             _fileUploadService = fileUploadService;
+            _broadcastService = broadcastService;
         }
 
         public async Task<List<ChannelResponse>> GetAllAsync() => await _context.Channels.Include(c => c.Series)
@@ -54,6 +56,7 @@ namespace Infrastructure.Services
                 .ToListAsync();
 
             await _context.SaveChangesAsync();
+            await _broadcastService.ReloadChannelAsync(channelId);
             return channel.Adapt<ChannelResponse>();
         }
 

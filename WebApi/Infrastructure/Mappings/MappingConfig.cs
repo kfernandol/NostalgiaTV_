@@ -1,4 +1,5 @@
 ﻿using ApplicationCore.DTOs.Channel;
+using ApplicationCore.DTOs.Episode;
 using ApplicationCore.DTOs.Rol;
 using ApplicationCore.DTOs.Series;
 using ApplicationCore.Entities;
@@ -27,6 +28,9 @@ namespace Infrastructure.Mappings
 
             TypeAdapterConfig<Rol, RolResponse>.NewConfig()
                 .Map(dest => dest.MenuIds, src => src.Menus.Select(m => m.Id).ToList());
+
+            TypeAdapterConfig<Episode, EpisodeResponse>.NewConfig()
+                .Map(dest => dest.EpisodeTypeName, src => src.EpisodeType.Name);
         }
     }
 }

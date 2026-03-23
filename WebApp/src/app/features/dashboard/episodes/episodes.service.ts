@@ -16,4 +16,12 @@ export class EpisodesService {
     create(request: EpisodeRequest) {
         return this.http.post<EpisodeResponse>(this.apiUrl, request, { withCredentials: true });
     }
+
+    update(id: number, request: Partial<EpisodeRequest>) {
+      return this.http.put<EpisodeResponse>(`${this.apiUrl}/${id}`, request, { withCredentials: true });
+    }
+
+    scan(seriesId: number) {
+        return this.http.post<EpisodeResponse[]>(`${environment.apiUrl}/api/v1/series/${seriesId}/scan`, {}, { withCredentials: true });
+    }
 }

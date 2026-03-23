@@ -128,15 +128,15 @@ export class ChannelsComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe((result) => {
-      if (!result) return;
-      this.channelsService.assignSeries(channel.id, result).subscribe({
+    if (!result) return;
+    this.channelsService.assignSeries(channel.id, result.data).subscribe({
         next: (updated) => {
-          this.channels.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
-          this.showSuccess('Series assigned');
+            this.channels.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+            this.showSuccess('Series assigned');
         },
         error: () => this.showError('Error assigning series'),
-      });
     });
+});
   }
 
   getSeriesNames(seriesIds: number[]) {

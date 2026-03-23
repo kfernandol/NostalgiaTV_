@@ -1,60 +1,94 @@
-<!-- TV Setup with CSS animations -->
+<!-- TV Setup -->
 <div class="tv-setup">
-  <div class="tv-container" #tvContainer>
-    <!-- Screen overlay with content -->
-    <div class="screen-overlay" #screenOverlay>
-      <div class="static-noise" [class.hidden]="!showStatic()"></div>
-      <div class="tv-content" [class.episode-transition]="animationState() > 0">
-        <div class="series-logo">SERIES RETRO</div>
-        <div class="episode-display">
-          <h2 class="episode-title">{{ currentEpisode()?.title || 'Selecciona un canal' }}</h2>
-          <span class="episode-year">{{ currentEpisode()?.year || '' }}</span>
+    <div class="tv-container" #tvContainer>
+        <div class="screen-overlay" #screenOverlay>
+    <div class="static-noise" [class.hidden]="!showStatic()"></div>
+
+    @if (currentState()) {
+        <video
+            #videoPlayer
+            class="video-player"
+            [muted]="isMuted()"
+            playsinline
+            autoplay>
+        </video>
+
+        <div class="series-overlay" [class.visible]="showOverlay()">
+            @if (currentState()!.seriesLogoPath) {
+                <img [src]="apiUrl + currentState()!.seriesLogoPath" class="overlay-logo" />
+            }
+            <div class="overlay-info">
+                <span class="overlay-series">{{ currentState()!.seriesName }}</span>
+                <span class="overlay-episode">{{ currentState()!.episodeTitle }}</span>
+            </div>
         </div>
-      </div>
-      <div class="crt-scanlines"></div>
-      <div class="crt-glare"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Floor/Carpet -->
-<div class="floor"></div>
-
-<!-- Kid watching at bottom -->
-<div class="kid-section">
-  <div class="kid-image-container">
-    <img src="images/kid-watching.png"
-         alt="Kid watching TV"
-         class="kid-image">
-  </div>
-</div>
-
-<!-- Floating Remote Control -->
-<div class="remote-control">
-  <div class="remote-header">
-    <h3>CONTROL</h3>
-    <div class="remote-led"></div>
-  </div>
-
-  <div class="channels-list">
-    @for (episode of episodes(); track episode.id) {
-      <button
-        class="channel-btn"
-        [class.active]="currentEpisode()?.id === episode.id"
-        (click)="selectChannel(episode)">
-        <span class="channel-number">CH {{ $index + 1 }}</span>
-        <span class="channel-name">{{ episode.title }}</span>
-      </button>
+    } @else {
+        <div class="tv-content">
+            <div class="series-logo">NOSTALGIA TV</div>
+            <div class="episode-title">Selecciona un canal</div>
+        </div>
     }
-  </div>
 
-  <!-- Login Button -->
-  <div class="remote-footer">
-    <button class="login-btn" (click)="goToLogin()">
-      <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
-      </svg>
-      <span>INGRESAR</span>
-    </button>
-  </div>
+    <div class="crt-scanlines"></div>
+    <div class="crt-glare"></div>
+</div>
+    </div>
+</div>
+
+<div class="tv-light"></div>
+<div class="floor"></div>
+<div class="scene-overlay"></div>
+<div class="kid-section">
+    <img src="images/kid-watching.png" alt="Kid watching TV" class="kid-image" />
+</div>
+
+<!-- Remote Control -->
+<div class="remote-control">
+    <div class="remote-header">
+        <div class="remote-header-spacer"></div>
+        <h3>CONTROL</h3>
+        <button mat-mini-fab (click)="goToLogin()">
+            <mat-icon>person</mat-icon>
+        </button>
+    </div>
+    <div class="remote-led"></div>
+    <div class="remote-divider"></div>
+
+    <div class="channels-list">
+        @for (channel of channels(); track channel.id) {
+            <button
+                class="channel-btn"
+                [class.active]="currentChannel()?.id === channel.id"
+                (click)="selectChannel(channel)">
+                @if (channel.logoPath) {
+                    <img [src]="apiUrl + channel.logoPath" class="channel-logo" [alt]="channel.name" />
+                }
+                <div class="channel-info">
+                    <span class="channel-number">CH {{ $index + 1 }}</span>
+                    <span class="channel-name">{{ channel.name }}</span>
+                </div>
+            </button>
+        }
+    </div>
+
+    <div class="remote-footer">
+        <div class="media-controls">
+            <button mat-icon-button (click)="toggleMute()">
+                <mat-icon>{{ isMuted() ? 'volume_off' : 'volume_mute' }}</mat-icon>
+            </button>
+            <button mat-icon-button (click)="volumeDown()">
+                <mat-icon>volume_down</mat-icon>
+            </button>
+            <button mat-icon-button (click)="volumeUp()">
+                <mat-icon>volume_up</mat-icon>
+            </button>
+            <button mat-icon-button (click)="toggleFullscreen()">
+                <mat-icon>fullscreen</mat-icon>
+            </button>
+        </div>
+        <div class="nav-controls">
+            <button mat-stroked-button class="nav-btn">PROGRAMACIÓN</button>
+            <button mat-stroked-button class="nav-btn">SERIES</button>
+        </div>
+    </div>
 </div>

@@ -9,5 +9,6 @@ namespace ApplicationCore.Interfaces
     {
         Task<List<EpisodeResponse>> GetBySeriesAsync(int seriesId);
         Task<EpisodeResponse> CreateAsync(EpisodeRequest request);
+        Task<EpisodeResponse> UpdateAsync(int id, UpdateEpisodeTypeRequest request);
     }
 }

@@ -18,6 +18,7 @@ namespace Infrastructure.Contexts
         public DbSet<Series> Series { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Episode> Episodes { get; set; }
+        public DbSet<EpisodeType> EpisodeTypes { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelState> ChannelStates { get; set; }
 
@@ -80,6 +81,14 @@ namespace Infrastructure.Contexts
                 PasswordHash = "kvfEh9DsfvFzJseLEA3QIQ==:WSdzlu6ve0AiOFTunKWVTMgQNnCtxd7F8xkEamSy+4Y=",
                 RolId = 1
             });
+
+            modelBuilder.Entity<EpisodeType>().HasData(
+                new EpisodeType { Id = 1, Name = "Regular" },
+                new EpisodeType { Id = 2, Name = "Special" },
+                new EpisodeType { Id = 3, Name = "Christmas Special" },
+                new EpisodeType { Id = 4, Name = "Halloween Special" },
+                new EpisodeType { Id = 5, Name = "Movie" }
+            );
         }
     }
 }

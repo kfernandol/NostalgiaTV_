@@ -5,14 +5,11 @@
 >
     <div class="breadcrumb-card mb-25 d-md-flex align-items-center justify-content-between">
         <h5 class="mb-0">Episodes</h5>
-        <button mat-flat-button color="primary" (click)="openForm()">
-            <mat-icon>add</mat-icon> New Episode
-        </button>
     </div>
 
     <mat-card class="daxa-card mb-25 border-radius bg-white border-none d-block">
         <mat-card-content>
-            <div class="mb-25">
+            <div class="mb-25 d-flex align-items-center gap-3">
                 <mat-form-field>
                     <mat-label>Filter by Series</mat-label>
                     <mat-select (selectionChange)="onSeriesChange($event.value)">
@@ -21,12 +18,22 @@
                         }
                     </mat-select>
                 </mat-form-field>
+                <button mat-flat-button color="accent" (click)="scan()" [disabled]="!selectedSeriesId()">
+                    <mat-icon>refresh</mat-icon> Sync from folder
+                </button>
             </div>
 
             <mat-table [dataSource]="episodes()">
                 <ng-container matColumnDef="id">
                     <mat-header-cell *matHeaderCellDef>#</mat-header-cell>
                     <mat-cell *matCellDef="let e">{{ e.id }}</mat-cell>
+                </ng-container>
+
+                <ng-container matColumnDef="season">
+                    <mat-header-cell *matHeaderCellDef>Season</mat-header-cell>
+                    <mat-cell *matCellDef="let e">
+                        @if (e.season > 0) { Season {{ e.season }} } @else { — }
+                    </mat-cell>
                 </ng-container>
 
                 <ng-container matColumnDef="order">
@@ -39,17 +46,24 @@
                     <mat-cell *matCellDef="let e">{{ e.title }}</mat-cell>
                 </ng-container>
 
+                <ng-container matColumnDef="type">
+                    <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
+                    <mat-cell *matCellDef="let e">{{ e.episodeTypeName }}</mat-cell>
+                </ng-container>
+
                 <ng-container matColumnDef="filePath">
-                    <mat-header-cell *matHeaderCellDef>File Path</mat-header-cell>
-                    <mat-cell *matCellDef="let e">{{ e.filePath }}</mat-cell>
+                    <mat-header-cell *matHeaderCellDef>File</mat-header-cell>
+                    <mat-cell *matCellDef="let e">{{ e.filePath ?? '—' }}</mat-cell>
                 </ng-container>
 
                 <ng-container matColumnDef="actions">
                     <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
                     <mat-cell *matCellDef="let e">
-                        <button mat-icon-button color="warn">
-                            <mat-icon>delete</mat-icon>
-                        </button>
+                        @if (isSpecial(e)) {
+                            <button mat-icon-button color="primary" (click)="changeType(e)" matTooltip="Change type">
+                                <mat-icon>label</mat-icon>
+                            </button>
+                        }
                     </mat-cell>
                 </ng-container>
 

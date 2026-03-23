@@ -14,5 +14,6 @@ namespace ApplicationCore.DTOs.Series
         public DateTime? EndDate { get; set; }
         public IFormFile? Logo { get; set; }
         public float? Rating { get; set; }
+        public int Seasons { get; set; }
     }
 }

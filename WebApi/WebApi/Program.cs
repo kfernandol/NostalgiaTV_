@@ -1,6 +1,7 @@
 
 using ApplicationCore;
 using Infrastructure;
+using Infrastructure.Hubs;
 using Serilog;
 using WebApi.Extensions;
 
@@ -15,6 +16,7 @@ namespace WebApi
             builder.Host.UseSerilog((context, config) => config.ReadFrom.Configuration(context.Configuration));
 
             // Add services to the container.
+            builder.Services.AddSignalR();
             builder.Services.AddControllers();
             builder.Services.AddApplicationCore(builder.Configuration);
             builder.Services.AddInfrastructure(builder.Configuration);
@@ -37,13 +39,17 @@ namespace WebApi
                 app.UseOpenApiConfig();
             }
 
+
             app.UseExceptionHandler();
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseRateLimiter();
-            app.MapControllers();
             app.UseStaticFiles();
+            app.MapControllers();
+
+            app.MapHub<ChannelHub>("/hubs/channel");
+
             app.Run();
         }
     }

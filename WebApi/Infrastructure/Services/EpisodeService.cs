@@ -21,7 +21,8 @@ namespace Infrastructure.Services
 
             return await _context.Episodes
                 .Where(e => e.SeriesId == seriesId)
-                .OrderBy(e => e.Order)
+                .Include(e => e.EpisodeType)
+                .OrderBy(e => e.Season)
                 .ProjectToType<EpisodeResponse>()
                 .ToListAsync();
         }
@@ -34,6 +35,23 @@ namespace Infrastructure.Services
             var episode = request.Adapt<Episode>();
             _context.Episodes.Add(episode);
             await _context.SaveChangesAsync();
+
+            await _context.Entry(episode).Reference(e => e.EpisodeType).LoadAsync();
+            return episode.Adapt<EpisodeResponse>();
+        }
+
+        public async Task<EpisodeResponse> UpdateAsync(int id, UpdateEpisodeTypeRequest request)
+        {
+            var episode = await _context.Episodes
+                .Include(e => e.EpisodeType)
+                .FirstOrDefaultAsync(e => e.Id == id)
+                ?? throw new NotFoundException($"Episode {id} not found");
+
+            episode.EpisodeTypeId = request.EpisodeTypeId;
+            await _context.SaveChangesAsync();
+
+            // Reload to get updated EpisodeType name
+            await _context.Entry(episode).Reference(e => e.EpisodeType).LoadAsync();
             return episode.Adapt<EpisodeResponse>();
         }
     }

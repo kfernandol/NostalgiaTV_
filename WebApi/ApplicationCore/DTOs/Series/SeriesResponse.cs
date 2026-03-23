@@ -14,6 +14,8 @@ namespace ApplicationCore.DTOs.Series
         public DateOnly? EndDate { get; set; }
         public string? LogoPath { get; set; }
         public float? Rating { get; set; }
+        public int Seasons { get; set; }
+        public string? FolderPath { get; set; }
         public List<int> CategoryIds { get; set; } = [];
     }
 }

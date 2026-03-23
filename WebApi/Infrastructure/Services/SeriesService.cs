@@ -1,4 +1,5 @@
-﻿using ApplicationCore.DTOs.Series;
+﻿using ApplicationCore.DTOs.Episode;
+using ApplicationCore.DTOs.Series;
 using ApplicationCore.Entities;
 using ApplicationCore.Exceptions;
 using ApplicationCore.Interfaces;
@@ -12,11 +13,13 @@ namespace Infrastructure.Services
     {
         private readonly NostalgiaTVContext _context;
         private readonly FileUploadService _fileUploadService;
+        private readonly SeriesFolderService _folderService;
 
-        public SeriesService(NostalgiaTVContext context, FileUploadService fileUploadService)
+        public SeriesService(NostalgiaTVContext context, FileUploadService fileUploadService, SeriesFolderService folderService)
         {
             _context = context;
             _fileUploadService = fileUploadService;
+            _folderService = folderService;
         }
 
         public async Task<List<SeriesResponse>> GetAllAsync() => await _context.Series.ProjectToType<SeriesResponse>().ToListAsync();
@@ -35,6 +38,8 @@ namespace Infrastructure.Services
             if (request.Logo != null)
                 series.LogoPath = await _fileUploadService.UploadAsync(request.Logo, "series");
 
+            series.FolderPath = _folderService.CreateSeriesFolder(request.Name, request.Seasons);
+
             _context.Series.Add(series);
             await _context.SaveChangesAsync();
             return series.Adapt<SeriesResponse>();
@@ -49,6 +54,11 @@ namespace Infrastructure.Services
 
             if (request.Logo != null)
                 series.LogoPath = await _fileUploadService.UploadAsync(request.Logo, "series");
+
+            if (!string.IsNullOrEmpty(series.FolderPath))
+                _folderService.UpdateSeriesFolders(series.FolderPath, request.Seasons);
+            else
+                series.FolderPath = _folderService.CreateSeriesFolder(request.Name, request.Seasons);
 
             await _context.SaveChangesAsync();
             return series.Adapt<SeriesResponse>();
@@ -75,6 +85,103 @@ namespace Infrastructure.Services
 
             await _context.SaveChangesAsync();
             return series.Adapt<SeriesResponse>();
+        }
+
+        public async Task<List<EpisodeResponse>> ScanFolderAsync(int seriesId)
+        {
+            var series = await _context.Series.FindAsync(seriesId)
+                ?? throw new NotFoundException($"Series {seriesId} not found");
+
+            if (string.IsNullOrEmpty(series.FolderPath) || !Directory.Exists(series.FolderPath))
+                throw new BadRequestException("Series folder not found.");
+
+            var episodeTypes = await _context.EpisodeTypes.ToListAsync();
+            var regularType = episodeTypes.First(t => t.Name == "Regular");
+            var specialType = episodeTypes.First(t => t.Name == "Special");
+            var movieType = episodeTypes.First(t => t.Name == "Movie");
+
+            var existingEpisodes = await _context.Episodes
+                .Where(e => e.SeriesId == seriesId)
+                .ToListAsync();
+
+            var newEpisodes = new List<Episode>();
+            var allDirs = Directory.GetDirectories(series.FolderPath);
+
+            // Scan Season folders
+            var seasonDirs = allDirs.Where(d =>
+            {
+                var name = Path.GetFileName(d.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "";
+                return name.StartsWith("season ", StringComparison.OrdinalIgnoreCase);
+            }).ToList();
+
+            foreach (var seasonDir in seasonDirs)
+            {
+                var dirName = Path.GetFileName(seasonDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "";
+                var numberPart = dirName.Replace("season ", "", StringComparison.OrdinalIgnoreCase).Trim();
+                var seasonNumber = int.TryParse(numberPart, out var n) ? n : 0;
+
+                foreach (var file in Directory.GetFiles(seasonDir))
+                {
+                    newEpisodes.Add(new Episode
+                    {
+                        Title = Path.GetFileNameWithoutExtension(file),
+                        FilePath = file,
+                        SeriesId = seriesId,
+                        Season = seasonNumber,
+                        EpisodeTypeId = regularType.Id
+                    });
+                }
+            }
+
+            // Scan Specials folder
+            var specialsDir = allDirs.FirstOrDefault(d =>
+                Path.GetFileName(d).Equals("specials", StringComparison.OrdinalIgnoreCase))
+                ?? Path.Combine(series.FolderPath, "specials");
+
+            if (Directory.Exists(specialsDir))
+            {
+                foreach (var file in Directory.GetFiles(specialsDir))
+                {
+                    newEpisodes.Add(new Episode
+                    {
+                        Title = Path.GetFileNameWithoutExtension(file),
+                        FilePath = file,
+                        SeriesId = seriesId,
+                        Season = 0,
+                        EpisodeTypeId = specialType.Id
+                    });
+                }
+            }
+
+            // Scan Movies folder
+            var moviesDir = allDirs.FirstOrDefault(d =>
+                Path.GetFileName(d).Equals("movies", StringComparison.OrdinalIgnoreCase))
+                ?? Path.Combine(series.FolderPath, "movies");
+
+            if (Directory.Exists(moviesDir))
+            {
+                foreach (var file in Directory.GetFiles(moviesDir))
+                {
+                    newEpisodes.Add(new Episode
+                    {
+                        Title = Path.GetFileNameWithoutExtension(file),
+                        FilePath = file,
+                        SeriesId = seriesId,
+                        Season = 0,
+                        EpisodeTypeId = movieType.Id
+                    });
+                }
+            }
+
+            _context.Episodes.RemoveRange(existingEpisodes);
+            _context.Episodes.AddRange(newEpisodes);
+            await _context.SaveChangesAsync();
+
+            return await _context.Episodes
+                .Where(e => e.SeriesId == seriesId)
+                .Include(e => e.EpisodeType)
+                .ProjectToType<EpisodeResponse>()
+                .ToListAsync();
         }
     }
 }

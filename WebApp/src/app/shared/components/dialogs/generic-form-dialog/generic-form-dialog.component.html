@@ -8,7 +8,7 @@
       <h5 class="mb-0">{{ isEdit ? 'Edit' : 'New' }} {{ config.title }}</h5>
     </mat-card-title>
   </mat-card-header>
-  <mat-card-content>
+  <mat-card-content style="max-height: 65vh; overflow-y: auto;">
     <form [formGroup]="form" class="pt-2">
       @for (field of config.fields; track field.key) {
         <div class="form-group mb-20">

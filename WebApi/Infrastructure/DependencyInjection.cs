@@ -17,11 +17,15 @@ namespace Infrastructure
             MappingConfig.Configure();
 
             services.AddDbContext<NostalgiaTVContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            services.AddSignalRCore();
 
             //Configurations
             services.Configure<FileUploadSettings>(configuration.GetSection("FileUpload"));
+            services.Configure<MediaSettings>(configuration.GetSection("MediaSettings"));
 
             //Services
+            services.AddSingleton<ChannelBroadcastService>();
+
             services.AddScoped<FileUploadService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ISeriesService, SeriesService>();
@@ -31,8 +35,11 @@ namespace Infrastructure
             services.AddScoped<IRolService, RolService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IMenuService, MenuService>();
+            services.AddScoped<SeriesFolderService>();
 
+            //Background Services
             services.AddHostedService<TokenCleanupService>();
+            services.AddHostedService(sp => sp.GetRequiredService<ChannelBroadcastService>());
 
             return services;
         }

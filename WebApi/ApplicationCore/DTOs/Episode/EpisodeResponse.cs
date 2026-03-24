@@ -10,6 +10,7 @@ namespace ApplicationCore.DTOs.Episode
         public string Title { get; set; } = string.Empty;
         public string? FilePath { get; set; }
         public int Season { get; set; }
+        public int EpisodeNumber { get; set; }
         public int EpisodeTypeId { get; set; }
         public string EpisodeTypeName { get; set; } = string.Empty;
         public int SeriesId { get; set; }

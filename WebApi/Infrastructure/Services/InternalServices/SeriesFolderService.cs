@@ -1,7 +1,7 @@
 ﻿using ApplicationCore.Settings;
 using Microsoft.Extensions.Options;
 
-namespace Infrastructure.Services
+namespace Infrastructure.Services.InternalServices
 {
     public class SeriesFolderService
     {

@@ -1,5 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { MatTableModule } from '@angular/material/table';
+import { Component, OnInit, ViewChild, AfterViewInit, signal } from '@angular/core';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -15,15 +16,17 @@ import { CustomizerSettingsService } from '../../../shared/components/customizer
 
 @Component({
     selector: 'app-users',
-    imports: [MatTableModule, MatButtonModule, MatIconModule, MatDialogModule, MatSnackBarModule, MatCardModule],
+    imports: [MatTableModule, MatPaginatorModule, MatButtonModule, MatIconModule, MatDialogModule, MatSnackBarModule, MatCardModule],
     templateUrl: './users.component.html',
     styleUrl: './users.component.scss'
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements OnInit, AfterViewInit {
 
-    users = signal<UserResponse[]>([]);
+    @ViewChild(MatPaginator) paginator!: MatPaginator;
+
     roles = signal<RolResponse[]>([]);
     displayedColumns = ['id', 'username', 'rol', 'actions'];
+    dataSource = new MatTableDataSource<UserResponse>([]);
 
     constructor(
         private usersService: UsersService,
@@ -35,7 +38,7 @@ export class UsersComponent implements OnInit {
 
     ngOnInit() {
         this.usersService.getAll().subscribe({
-            next: data => this.users.set(data),
+            next: data => this.dataSource.data = data,
             error: () => this.showError('Error loading users')
         });
         this.rolesService.getAll().subscribe({
@@ -44,44 +47,38 @@ export class UsersComponent implements OnInit {
         });
     }
 
+    ngAfterViewInit() { this.dataSource.paginator = this.paginator; }
+
     openForm(user?: UserResponse) {
         const config: DialogConfig = {
             title: 'User',
             fields: [
                 { key: 'username', label: 'Username', type: 'text', validators: [Validators.required, Validators.maxLength(50)] },
                 { key: 'password', label: 'Password', type: 'text', validators: user ? [Validators.minLength(8), Validators.maxLength(50)] : [Validators.required, Validators.minLength(8), Validators.maxLength(50)] },
-                {
-                    key: 'rolId',
-                    label: 'Role',
-                    type: 'select',
-                    validators: [Validators.required],
-                    options: this.roles().map(r => ({ value: r.id, label: r.name }))
-                }
+                { key: 'rolId', label: 'Role', type: 'select', validators: [Validators.required], options: this.roles().map(r => ({ value: r.id, label: r.name })) }
             ],
             data: user ? { username: user.username, rolId: user.rol.id } : null
         };
 
         const dialogRef = this.dialog.open(GenericFormDialogComponent, {
-            width: '500px',
-            data: config,
+            width: '500px', data: config,
             panelClass: this.themeService.isDark() ? 'dark-theme' : ''
         });
 
         dialogRef.afterClosed().subscribe(result => {
             if (!result) return;
-            const payload = result.data;
             if (user) {
-                this.usersService.update(user.id, payload).subscribe({
+                this.usersService.update(user.id, result.data).subscribe({
                     next: updated => {
-                        this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
+                        this.dataSource.data = this.dataSource.data.map(u => u.id === updated.id ? updated : u);
                         this.showSuccess('User updated');
                     },
                     error: () => this.showError('Error updating user')
                 });
             } else {
-                this.usersService.create(payload).subscribe({
+                this.usersService.create(result.data).subscribe({
                     next: created => {
-                        this.users.update(list => [...list, created]);
+                        this.dataSource.data = [...this.dataSource.data, created];
                         this.showSuccess('User created');
                     },
                     error: () => this.showError('Error creating user')
@@ -93,18 +90,13 @@ export class UsersComponent implements OnInit {
     delete(id: number) {
         this.usersService.delete(id).subscribe({
             next: () => {
-                this.users.update(list => list.filter(u => u.id !== id));
+                this.dataSource.data = this.dataSource.data.filter(u => u.id !== id);
                 this.showSuccess('User deleted');
             },
             error: () => this.showError('Error deleting user')
         });
     }
 
-    private showSuccess(msg: string) {
-        this.snackBar.open(msg, 'Close', { duration: 3000 });
-    }
-
-    private showError(msg: string) {
-        this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'error-snack' });
-    }
+    private showSuccess(msg: string) { this.snackBar.open(msg, 'Close', { duration: 3000 }); }
+    private showError(msg: string) { this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'error-snack' }); }
 }

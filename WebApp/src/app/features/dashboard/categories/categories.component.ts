@@ -1,5 +1,6 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { MatTableModule } from '@angular/material/table';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -13,14 +14,16 @@ import { CustomizerSettingsService } from '../../../shared/components/customizer
 
 @Component({
     selector: 'app-categories',
-    imports: [MatTableModule, MatButtonModule, MatIconModule, MatDialogModule, MatSnackBarModule, MatCardModule],
+    imports: [MatTableModule, MatPaginatorModule, MatButtonModule, MatIconModule, MatDialogModule, MatSnackBarModule, MatCardModule],
     templateUrl: './categories.component.html',
     styleUrl: './categories.component.scss'
 })
-export class CategoriesComponent implements OnInit {
+export class CategoriesComponent implements OnInit, AfterViewInit {
 
-    categories = signal<CategoryResponse[]>([]);
+    @ViewChild(MatPaginator) paginator!: MatPaginator;
+
     displayedColumns = ['id', 'name', 'actions'];
+    dataSource = new MatTableDataSource<CategoryResponse>([]);
 
     constructor(
         private categoriesService: CategoriesService,
@@ -29,13 +32,13 @@ export class CategoriesComponent implements OnInit {
         public themeService: CustomizerSettingsService
     ) {}
 
-    ngOnInit() {
-        this.loadCategories();
-    }
+    ngOnInit() { this.loadCategories(); }
+
+    ngAfterViewInit() { this.dataSource.paginator = this.paginator; }
 
     loadCategories() {
         this.categoriesService.getAll().subscribe({
-            next: data => this.categories.set(data),
+            next: data => this.dataSource.data = data,
             error: () => this.showError('Error loading categories')
         });
     }
@@ -43,33 +46,29 @@ export class CategoriesComponent implements OnInit {
     openForm(category?: CategoryResponse) {
         const config: DialogConfig = {
             title: 'Category',
-            fields: [
-                { key: 'name', label: 'Name', type: 'text', validators: [Validators.required, Validators.maxLength(100)] }
-            ],
+            fields: [{ key: 'name', label: 'Name', type: 'text', validators: [Validators.required, Validators.maxLength(100)] }],
             data: category ?? null
         };
 
         const dialogRef = this.dialog.open(GenericFormDialogComponent, {
-            width: '400px',
-            data: config,
+            width: '400px', data: config,
             panelClass: this.themeService.isDark() ? 'dark-theme' : ''
         });
 
         dialogRef.afterClosed().subscribe(result => {
             if (!result) return;
-            const payload = result.data;
             if (category) {
-                this.categoriesService.update(category.id, payload).subscribe({
+                this.categoriesService.update(category.id, result.data).subscribe({
                     next: updated => {
-                        this.categories.update(list => list.map(c => c.id === updated.id ? updated : c));
+                        this.dataSource.data = this.dataSource.data.map(c => c.id === updated.id ? updated : c);
                         this.showSuccess('Category updated');
                     },
                     error: () => this.showError('Error updating category')
                 });
             } else {
-                this.categoriesService.create(payload).subscribe({
+                this.categoriesService.create(result.data).subscribe({
                     next: created => {
-                        this.categories.update(list => [...list, created]);
+                        this.dataSource.data = [...this.dataSource.data, created];
                         this.showSuccess('Category created');
                     },
                     error: () => this.showError('Error creating category')
@@ -81,18 +80,13 @@ export class CategoriesComponent implements OnInit {
     delete(id: number) {
         this.categoriesService.delete(id).subscribe({
             next: () => {
-                this.categories.update(list => list.filter(c => c.id !== id));
+                this.dataSource.data = this.dataSource.data.filter(c => c.id !== id);
                 this.showSuccess('Category deleted');
             },
             error: () => this.showError('Error deleting category')
         });
     }
 
-    private showSuccess(msg: string) {
-        this.snackBar.open(msg, 'Close', { duration: 3000 });
-    }
-
-    private showError(msg: string) {
-        this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'error-snack' });
-    }
+    private showSuccess(msg: string) { this.snackBar.open(msg, 'Close', { duration: 3000 }); }
+    private showError(msg: string) { this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'error-snack' }); }
 }

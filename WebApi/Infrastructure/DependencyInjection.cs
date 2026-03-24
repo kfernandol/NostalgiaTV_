@@ -1,9 +1,11 @@
 ﻿using ApplicationCore.Interfaces;
 using ApplicationCore.Settings;
+using FFMpegCore;
 using Infrastructure.BackgroundServices;
 using Infrastructure.Contexts;
 using Infrastructure.Mappings;
 using Infrastructure.Services;
+using Infrastructure.Services.InternalServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +17,7 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             MappingConfig.Configure();
+            GlobalFFOptions.Configure(opts => opts.BinaryFolder = configuration["FFmpeg:BinaryFolder"]!);
 
             services.AddDbContext<NostalgiaTVContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
             services.AddSignalRCore();

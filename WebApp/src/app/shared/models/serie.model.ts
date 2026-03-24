@@ -16,5 +16,7 @@ export interface SeriesResponse {
     endDate?: string;
     logoPath?: string;
     rating?: number;
+    seasons?: number;
+    folderPath?: string;
     categoryIds: number[];
 }

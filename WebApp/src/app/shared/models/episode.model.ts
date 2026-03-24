@@ -1,9 +1,7 @@
-export interface EpisodeRequest {
-    title: string;
-    filePath?: string;
-    season: number;
+export interface UpdateEpisodeRequest {
+    title?: string;
+    episodeNumber: number;
     episodeTypeId: number;
-    seriesId: number;
 }
 
 export interface EpisodeResponse {
@@ -11,6 +9,7 @@ export interface EpisodeResponse {
     title: string;
     filePath?: string;
     season: number;
+    episodeNumber: number;
     episodeTypeId: number;
     episodeTypeName: string;
     seriesId: number;

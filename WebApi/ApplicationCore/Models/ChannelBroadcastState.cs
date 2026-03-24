@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ApplicationCore.Entities
+namespace ApplicationCore.Models
 {
     public class ChannelBroadcastState
     {
@@ -10,5 +10,6 @@ namespace ApplicationCore.Entities
         public int CurrentEpisodeId { get; set; }
         public double CurrentSecond { get; set; }
         public DateTime StartedAt { get; set; }
+        public double DurationSeconds { get; set; }
     }
 }

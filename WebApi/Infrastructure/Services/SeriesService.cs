@@ -3,7 +3,9 @@ using ApplicationCore.DTOs.Series;
 using ApplicationCore.Entities;
 using ApplicationCore.Exceptions;
 using ApplicationCore.Interfaces;
+using ApplicationCore.Models;
 using Infrastructure.Contexts;
+using Infrastructure.Services.InternalServices;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -182,6 +184,37 @@ namespace Infrastructure.Services
                 .Include(e => e.EpisodeType)
                 .ProjectToType<EpisodeResponse>()
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<SeriesResponse>> GetPublicAsync(SeriesFilterRequest filter)
+        {
+            var query = _context.Series.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Name))
+                query = query.Where(s => s.Name.Contains(filter.Name));
+
+            if (filter.ChannelId.HasValue)
+                query = query.Where(s => s.Channels.Any(c => c.Id == filter.ChannelId));
+
+            if (filter.EpisodeTypeId.HasValue)
+                query = query.Where(s => s.Episodes.Any(e => e.EpisodeTypeId == filter.EpisodeTypeId));
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderBy(s => s.Name)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ProjectToType<SeriesResponse>()
+                .ToListAsync();
+
+            return new PagedResult<SeriesResponse>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = filter.Page,
+                PageSize = filter.PageSize
+            };
         }
     }
 }

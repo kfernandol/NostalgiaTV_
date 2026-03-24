@@ -1,6 +1,8 @@
 ﻿using ApplicationCore.DTOs.Channel;
 using ApplicationCore.Entities;
+using ApplicationCore.Models;
 using Infrastructure.Contexts;
+using Infrastructure.Helpers;
 using Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Infrastructure.Services
+namespace Infrastructure.BackgroundServices
 {
     public class ChannelBroadcastService : BackgroundService
     {
@@ -69,31 +71,43 @@ namespace Infrastructure.Services
 
                 if (!episodes.Any()) continue;
 
+                var firstEpisode = episodes[0];
+                var duration = await VideoHelper.GetVideoDurationAsync(firstEpisode.FilePath!);
+
                 _playlists[channel.Id] = episodes;
                 _states[channel.Id] = new ChannelBroadcastState
                 {
                     ChannelId = channel.Id,
-                    CurrentEpisodeId = episodes[0].Id,
+                    CurrentEpisodeId = firstEpisode.Id,
                     CurrentSecond = 0,
-                    StartedAt = DateTime.UtcNow
+                    StartedAt = DateTime.UtcNow,
+                    DurationSeconds = duration
                 };
             }
         }
 
         private async Task BroadcastStates()
         {
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+
             foreach (var (channelId, state) in _states)
             {
                 state.CurrentSecond = (DateTime.UtcNow - state.StartedAt).TotalSeconds;
 
-                using var scope = _scopeFactory.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+                // Advance to next episode if current one ended
+                if (state.CurrentSecond >= state.DurationSeconds)
+                    await AdvanceEpisodeAsync(channelId, state);
 
                 var episode = await context.Episodes
                     .Include(e => e.Series)
                     .FirstOrDefaultAsync(e => e.Id == state.CurrentEpisodeId);
 
                 if (episode == null) continue;
+
+                var playlist = _playlists[channelId];
+                var currentIndex = playlist.FindIndex(e => e.Id == state.CurrentEpisodeId);
+                var nextEpisode = playlist.ElementAtOrDefault(currentIndex + 1) ?? playlist[0];
 
                 var response = new ChannelStateResponse
                 {
@@ -103,12 +117,32 @@ namespace Infrastructure.Services
                     FilePath = episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
                     SeriesName = episode.Series.Name,
                     SeriesLogoPath = episode.Series.LogoPath,
-                    CurrentSecond = state.CurrentSecond
+                    CurrentSecond = state.CurrentSecond,
+                    // NEW
+                    NextEpisodeId = nextEpisode.Id,
+                    NextEpisodeTitle = nextEpisode.Title,
+                    SecondsUntilNext = state.DurationSeconds - state.CurrentSecond
                 };
 
                 await _hubContext.Clients.Group($"channel-{channelId}")
                     .SendAsync("ChannelState", response);
             }
+        }
+
+        private async Task AdvanceEpisodeAsync(int channelId, ChannelBroadcastState state)
+        {
+            var playlist = _playlists[channelId];
+            var currentIndex = playlist.FindIndex(e => e.Id == state.CurrentEpisodeId);
+            var next = playlist.ElementAtOrDefault(currentIndex + 1) ?? playlist[0];
+
+            var duration = await VideoHelper.GetVideoDurationAsync(next.FilePath!);
+
+            state.CurrentEpisodeId = next.Id;
+            state.CurrentSecond = 0;
+            state.StartedAt = DateTime.UtcNow;
+            state.DurationSeconds = duration;
+
+            _logger.LogInformation("Channel {id} advanced to episode {episodeId}", channelId, next.Id);
         }
 
         public ChannelBroadcastState? GetState(int channelId) =>
@@ -155,6 +189,32 @@ namespace Infrastructure.Services
                 CurrentEpisodeId = episodes[0].Id,
                 CurrentSecond = 0,
                 StartedAt = DateTime.UtcNow
+            };
+        }
+
+        public async Task<ChannelStateResponse?> GetStateResponseAsync(int channelId)
+        {
+            var state = GetState(channelId);
+            if (state == null) return null;
+
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+
+            var episode = await context.Episodes
+                .Include(e => e.Series)
+                .FirstOrDefaultAsync(e => e.Id == state.CurrentEpisodeId);
+
+            if (episode == null) return null;
+
+            return new ChannelStateResponse
+            {
+                ChannelId = channelId,
+                EpisodeId = episode.Id,
+                EpisodeTitle = episode.Title,
+                FilePath = episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
+                SeriesName = episode.Series.Name,
+                SeriesLogoPath = episode.Series.LogoPath,
+                CurrentSecond = state.CurrentSecond
             };
         }
     }

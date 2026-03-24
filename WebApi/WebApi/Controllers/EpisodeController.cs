@@ -19,11 +19,8 @@ namespace WebApi.Controllers
         [HttpGet("series/{seriesId}")]
         public async Task<IActionResult> GetBySeries(int seriesId) => Ok(await _episodeService.GetBySeriesAsync(seriesId));
 
-        [HttpPost]
-        public async Task<IActionResult> Create(EpisodeRequest request) => Ok(await _episodeService.CreateAsync(request));
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, UpdateEpisodeTypeRequest request) => Ok(await _episodeService.UpdateAsync(id, request));
+        public async Task<IActionResult> Update(int id, UpdateEpisodeRequest request) => Ok(await _episodeService.UpdateAsync(id, request));
 
     }
 }

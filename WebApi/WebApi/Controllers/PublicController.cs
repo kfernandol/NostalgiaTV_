@@ -1,6 +1,8 @@
 ﻿using ApplicationCore.DTOs.Channel;
+using ApplicationCore.DTOs.Series;
 using ApplicationCore.Interfaces;
 using Asp.Versioning;
+using Infrastructure.BackgroundServices;
 using Infrastructure.Contexts;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -15,38 +17,39 @@ namespace WebApi.Controllers
     {
         private readonly IChannelService _channelService;
         private readonly ChannelBroadcastService _broadcastService;
+        private readonly IEpisodeService _episodeService;
+        private readonly ISeriesService _seriesService;
 
-        public PublicController(IChannelService channelService, ChannelBroadcastService broadcastService)
+        public PublicController(
+            IChannelService channelService,
+            ChannelBroadcastService broadcastService,
+            IEpisodeService episodeService,
+            ISeriesService seriesService)
         {
             _channelService = channelService;
             _broadcastService = broadcastService;
+            _episodeService = episodeService;
+            _seriesService = seriesService;
         }
 
         [HttpGet("channels/{channelId}/state")]
-        public async Task<IActionResult> GetChannelState(int channelId, [FromServices] NostalgiaTVContext context)
+        public async Task<IActionResult> GetChannelState(int channelId)
         {
-            var state = _broadcastService.GetState(channelId);
-            if (state == null) return NotFound();
-
-            var episode = await context.Episodes
-                .Include(e => e.Series)
-                .FirstOrDefaultAsync(e => e.Id == state.CurrentEpisodeId);
-
-            if (episode == null) return NotFound();
-
-            return Ok(new ChannelStateResponse
-            {
-                ChannelId = channelId,
-                EpisodeId = episode.Id,
-                EpisodeTitle = episode.Title,
-                FilePath = episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
-                SeriesName = episode.Series.Name,
-                SeriesLogoPath = episode.Series.LogoPath,
-                CurrentSecond = state.CurrentSecond
-            });
+            var response = await _broadcastService.GetStateResponseAsync(channelId);
+            if (response == null) return NotFound();
+            return Ok(response);
         }
 
         [HttpGet("channels")]
         public async Task<IActionResult> GetChannels() => Ok(await _channelService.GetAllAsync());
+
+        [HttpGet("episode-types")]
+        public async Task<IActionResult> GetEpisodeTypes() => Ok(await _episodeService.GetTypesAsync());
+
+        [HttpGet("series")]
+        public async Task<IActionResult> GetSeries([FromQuery] SeriesFilterRequest filter) => Ok(await _seriesService.GetPublicAsync(filter));
+
+        [HttpGet("series/{seriesId}/episodes")]
+        public async Task<IActionResult> GetEpisodesBySeries(int seriesId) => Ok(await _episodeService.GetBySeriesPublicAsync(seriesId));
     }
 }

@@ -13,5 +13,8 @@ namespace ApplicationCore.DTOs.Channel
         public string SeriesName { get; set; } = string.Empty;
         public string? SeriesLogoPath { get; set; }
         public double CurrentSecond { get; set; }
+        public int NextEpisodeId { get; set; }
+        public string? NextEpisodeTitle { get; set; }
+        public double SecondsUntilNext { get; set; }
     }
 }

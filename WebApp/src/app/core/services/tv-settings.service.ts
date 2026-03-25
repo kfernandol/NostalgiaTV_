@@ -5,6 +5,7 @@ export interface VideoFilterProfile {
     scanlineDensity: number;
     crtCurvature: boolean;
     vignette: boolean;
+    scanlineAnimation: boolean,
 }
 
 export interface TvSettings {
@@ -24,6 +25,7 @@ const DEFAULT_FILTER: VideoFilterProfile = {
     scanlineDensity: 2,
     crtCurvature: true,
     vignette: true,
+    scanlineAnimation: true,
 };
 
 const DEFAULT_FILTER_FULLSCREEN: VideoFilterProfile = {
@@ -31,6 +33,7 @@ const DEFAULT_FILTER_FULLSCREEN: VideoFilterProfile = {
     scanlineDensity: 2,
     crtCurvature: true,
     vignette: true,
+    scanlineAnimation: true,
 };
 
 const STORAGE_KEY = 'nostalgia_tv_settings';

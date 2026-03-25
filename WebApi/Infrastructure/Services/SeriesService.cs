@@ -106,77 +106,89 @@ namespace Infrastructure.Services
                 .Where(e => e.SeriesId == seriesId)
                 .ToListAsync();
 
-            var newEpisodes = new List<Episode>();
+            // Build map of existing episodes by normalized FilePath
+            var existingByPath = existingEpisodes
+                .Where(e => e.FilePath != null)
+                .ToDictionary(e => NormalizePath(e.FilePath!), e => e);
+
+            var scannedFiles = new List<(string FilePath, int Season, int EpisodeTypeId)>();
             var allDirs = Directory.GetDirectories(series.FolderPath);
 
-            // Scan Season folders
-            var seasonDirs = allDirs.Where(d =>
+            // Season folders
+            foreach (var seasonDir in allDirs.Where(d =>
+                Path.GetFileName(d).StartsWith("season ", StringComparison.OrdinalIgnoreCase)))
             {
-                var name = Path.GetFileName(d.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "";
-                return name.StartsWith("season ", StringComparison.OrdinalIgnoreCase);
-            }).ToList();
-
-            foreach (var seasonDir in seasonDirs)
-            {
-                var dirName = Path.GetFileName(seasonDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "";
+                var dirName = Path.GetFileName(seasonDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 var numberPart = dirName.Replace("season ", "", StringComparison.OrdinalIgnoreCase).Trim();
                 var seasonNumber = int.TryParse(numberPart, out var n) ? n : 0;
 
                 foreach (var file in Directory.GetFiles(seasonDir))
-                {
-                    newEpisodes.Add(new Episode
-                    {
-                        Title = Path.GetFileNameWithoutExtension(file),
-                        FilePath = file,
-                        SeriesId = seriesId,
-                        Season = seasonNumber,
-                        EpisodeTypeId = regularType.Id
-                    });
-                }
+                    scannedFiles.Add((file, seasonNumber, regularType.Id));
             }
 
-            // Scan Specials folder
+            // Specials folder
             var specialsDir = allDirs.FirstOrDefault(d =>
                 Path.GetFileName(d).Equals("specials", StringComparison.OrdinalIgnoreCase))
                 ?? Path.Combine(series.FolderPath, "specials");
 
             if (Directory.Exists(specialsDir))
-            {
                 foreach (var file in Directory.GetFiles(specialsDir))
-                {
-                    newEpisodes.Add(new Episode
-                    {
-                        Title = Path.GetFileNameWithoutExtension(file),
-                        FilePath = file,
-                        SeriesId = seriesId,
-                        Season = 0,
-                        EpisodeTypeId = specialType.Id
-                    });
-                }
-            }
+                    scannedFiles.Add((file, 0, specialType.Id));
 
-            // Scan Movies folder
+            // Movies folder
             var moviesDir = allDirs.FirstOrDefault(d =>
                 Path.GetFileName(d).Equals("movies", StringComparison.OrdinalIgnoreCase))
                 ?? Path.Combine(series.FolderPath, "movies");
 
             if (Directory.Exists(moviesDir))
-            {
                 foreach (var file in Directory.GetFiles(moviesDir))
+                    scannedFiles.Add((file, 0, movieType.Id));
+
+            var scannedPaths = scannedFiles.Select(f => NormalizePath(f.FilePath)).ToHashSet();
+
+            // Remove episodes whose file no longer exists
+            var toRemove = existingEpisodes.Where(e =>
+                e.FilePath == null || !scannedPaths.Contains(NormalizePath(e.FilePath))).ToList();
+            _context.Episodes.RemoveRange(toRemove);
+
+            // Add or update
+            foreach (var (filePath, season, episodeTypeId) in scannedFiles)
+            {
+                var key = NormalizePath(filePath);
+                var fileTitle = Path.GetFileNameWithoutExtension(filePath);
+
+                if (existingByPath.TryGetValue(key, out var existing))
                 {
-                    newEpisodes.Add(new Episode
+                    // File already exists — only update FilePath if it changed (shouldn't happen but just in case)
+                    // Never overwrite Title or EpisodeNumber if they were manually edited
+                    var titleMatchesFile = existing.Title == fileTitle;
+                    var wasManuallyEdited = !titleMatchesFile || existing.EpisodeNumber > 0;
+
+                    if (!wasManuallyEdited)
                     {
-                        Title = Path.GetFileNameWithoutExtension(file),
-                        FilePath = file,
+                        // Not edited — safe to update title from filename
+                        existing.Title = fileTitle;
+                    }
+
+                    existing.FilePath = filePath;
+                    existing.Season = season;
+                    existing.EpisodeTypeId = episodeTypeId;
+                }
+                else
+                {
+                    // New file — create with filename as title
+                    _context.Episodes.Add(new Episode
+                    {
+                        Title = fileTitle,
+                        FilePath = filePath,
                         SeriesId = seriesId,
-                        Season = 0,
-                        EpisodeTypeId = movieType.Id
+                        Season = season,
+                        EpisodeNumber = 0,
+                        EpisodeTypeId = episodeTypeId
                     });
                 }
             }
 
-            _context.Episodes.RemoveRange(existingEpisodes);
-            _context.Episodes.AddRange(newEpisodes);
             await _context.SaveChangesAsync();
 
             return await _context.Episodes
@@ -185,6 +197,8 @@ namespace Infrastructure.Services
                 .ProjectToType<EpisodeResponse>()
                 .ToListAsync();
         }
+
+        private static string NormalizePath(string path) => path.Replace("\\", "/").ToLowerInvariant().Trim();
 
         public async Task<PagedResult<SeriesResponse>> GetPublicAsync(SeriesFilterRequest filter)
         {

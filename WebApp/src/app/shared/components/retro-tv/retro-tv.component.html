@@ -1,386 +1,488 @@
 <!-- TV Setup -->
 <div class="tv-setup">
-    <div class="tv-container" #tvContainer>
-        <div class="screen-overlay" #screenOverlay
-            (mouseenter)="onScreenHover(true)"
-            (mouseleave)="onScreenHover(false)">
+  <div class="tv-container" #tvContainer>
+    <div
+      class="screen-overlay"
+      #screenOverlay
+      (mouseenter)="onScreenHover(true)"
+      (mouseleave)="onScreenHover(false)"
+    >
+      <div class="static-noise" [class.hidden]="!showStatic()"></div>
 
-            <div class="static-noise" [class.hidden]="!showStatic()"></div>
+      @if (currentState() || currentEpisode()) {
+        <video
+          #videoPlayer
+          class="video-player"
+          [muted]="isMuted()"
+          playsinline
+          autoplay
+          disablePictureInPicture
+          controlslist="nodownload nofullscreen noremoteplayback"
+        ></video>
 
-            @if (currentState() || currentEpisode()) {
-                <video #videoPlayer class="video-player" [muted]="isMuted()"
-                    playsinline autoplay disablePictureInPicture
-                    controlslist="nodownload nofullscreen noremoteplayback">
-                </video>
+        <div
+          class="video-filters"
+          #videoFilters
+          [class.curvature]="activeFilters().crtCurvature"
+          [class.vignette]="activeFilters().vignette"
+          [style.--scanline-opacity]="activeFilters().scanlineIntensity / 100"
+          [style.--scanline-size.px]="activeFilters().scanlineDensity * 2"
+        ></div>
 
-                <div class="video-filters" #videoFilters
-                    [class.curvature]="activeFilters().crtCurvature"
-                    [class.vignette]="activeFilters().vignette"
-                    [style.--scanline-opacity]="activeFilters().scanlineIntensity / 100"
-                    [style.--scanline-size.px]="activeFilters().scanlineDensity * 2">
-                </div>
+        <button
+          class="overlay-filter-btn"
+          [class.visible]="showOverlay()"
+          (click)="toggleFiltersPanel()"
+        >
+          <mat-icon>tune</mat-icon>
+        </button>
 
-                <button class="overlay-filter-btn" [class.visible]="showOverlay()"
-                    (click)="toggleFiltersPanel()">
-                    <mat-icon>tune</mat-icon>
-                </button>
+        @if (isFullscreen()) {
+          <button
+            class="overlay-fullscreen-exit-btn"
+            [class.visible]="showOverlay()"
+            (click)="toggleFullscreen()"
+          >
+            <mat-icon>fullscreen_exit</mat-icon>
+          </button>
+        }
 
-                @if (isFullscreen()) {
-                    <button class="overlay-fullscreen-exit-btn" [class.visible]="showOverlay()"
-                        (click)="toggleFullscreen()">
-                        <mat-icon>fullscreen_exit</mat-icon>
-                    </button>
-                }
+        @if (showFiltersPanel()) {
+          <div
+            class="filters-panel"
+            [class.filters-panel--fs]="isFullscreen()"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="filters-panel-header">
+              <span>{{ isFullscreen() ? 'FILTROS FULLSCREEN' : 'FILTROS' }}</span>
+              <button class="filters-panel-close" (click)="closeFiltersPanel()">✕</button>
+            </div>
 
-                @if (showFiltersPanel()) {
-                    <div class="filters-panel" [class.filters-panel--fs]="isFullscreen()"
-                        (click)="$event.stopPropagation()">
-                        <div class="filters-panel-header">
-                            <span>{{ isFullscreen() ? 'FILTROS FULLSCREEN' : 'FILTROS' }}</span>
-                            <button class="filters-panel-close" (click)="closeFiltersPanel()">✕</button>
-                        </div>
+            <div class="filter-row">
+              <span class="filter-label">Intensidad líneas</span>
+              <div class="filter-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  [value]="activeFilters().scanlineIntensity"
+                  (input)="updateFilter('scanlineIntensity', +$any($event.target).value)"
+                />
+                <span class="filter-value">{{ activeFilters().scanlineIntensity }}%</span>
+              </div>
+            </div>
 
-                        <div class="filter-row">
-                            <span class="filter-label">Intensidad líneas</span>
-                            <div class="filter-control">
-                                <input type="range" min="0" max="100" step="1"
-                                    [value]="activeFilters().scanlineIntensity"
-                                    (input)="updateFilter('scanlineIntensity', +$any($event.target).value)" />
-                                <span class="filter-value">{{ activeFilters().scanlineIntensity }}%</span>
-                            </div>
-                        </div>
+            <div class="filter-row">
+              <span class="filter-label">Densidad líneas</span>
+              <div class="filter-control">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  step="1"
+                  [value]="activeFilters().scanlineDensity"
+                  (input)="updateFilter('scanlineDensity', +$any($event.target).value)"
+                />
+                <span class="filter-value">{{ activeFilters().scanlineDensity }}</span>
+              </div>
+            </div>
 
-                        <div class="filter-row">
-                            <span class="filter-label">Densidad líneas</span>
-                            <div class="filter-control">
-                                <input type="range" min="1" max="10" step="1"
-                                    [value]="activeFilters().scanlineDensity"
-                                    (input)="updateFilter('scanlineDensity', +$any($event.target).value)" />
-                                <span class="filter-value">{{ activeFilters().scanlineDensity }}</span>
-                            </div>
-                        </div>
+            <div class="filter-row">
+              <span class="filter-label">Curvatura CRT</span>
+              <input
+                type="checkbox"
+                [checked]="activeFilters().crtCurvature"
+                (change)="updateFilter('crtCurvature', $any($event.target).checked)"
+              />
+            </div>
 
-                        <div class="filter-row">
-                            <span class="filter-label">Curvatura CRT</span>
-                            <input type="checkbox" [checked]="activeFilters().crtCurvature"
-                                (change)="updateFilter('crtCurvature', $any($event.target).checked)" />
-                        </div>
+            <div class="filter-row">
+              <span class="filter-label">Viñeta</span>
+              <input
+                type="checkbox"
+                [checked]="activeFilters().vignette"
+                (change)="updateFilter('vignette', $any($event.target).checked)"
+              />
+            </div>
 
-                        <div class="filter-row">
-                            <span class="filter-label">Viñeta</span>
-                            <input type="checkbox" [checked]="activeFilters().vignette"
-                                (change)="updateFilter('vignette', $any($event.target).checked)" />
-                        </div>
-                    </div>
-                }
+            <div class="filter-row">
+              <span class="filter-label">Scanline animado</span>
+              <input
+                type="checkbox"
+                [checked]="activeFilters().scanlineAnimation"
+                (change)="updateFilter('scanlineAnimation', $any($event.target).checked)"
+              />
+            </div>
+          </div>
+        }
 
-                @if (mode() === 'channels' && currentState()?.seriesLogoPath) {
-                    <div class="corner-logo" [class.visible]="showOverlay()" [class.corner-logo--fs]="isFullscreen()">
-                        <img [src]="apiUrl + currentState()!.seriesLogoPath" class="corner-logo-img" />
-                    </div>
-                }
+        @if (mode() === 'channels' && currentState()?.seriesLogoPath) {
+          <div
+            class="corner-logo"
+            [class.visible]="showOverlay()"
+            [class.corner-logo--fs]="isFullscreen()"
+          >
+            <img [src]="apiUrl + currentState()!.seriesLogoPath" class="corner-logo-img" />
+          </div>
+        }
 
-                @if (mode() === 'series' && selectedSeries()?.logoPath) {
-                    <div class="corner-logo" [class.visible]="showOverlay()" [class.corner-logo--fs]="isFullscreen()">
-                        <img [src]="apiUrl + selectedSeries()!.logoPath" class="corner-logo-img" />
-                    </div>
-                }
+        @if (mode() === 'series' && selectedSeries()?.logoPath) {
+          <div
+            class="corner-logo"
+            [class.visible]="showOverlay()"
+            [class.corner-logo--fs]="isFullscreen()"
+          >
+            <img [src]="apiUrl + selectedSeries()!.logoPath" class="corner-logo-img" />
+          </div>
+        }
 
-                <div class="series-overlay" [class.visible]="showOverlay()" [class.series-overlay--fs]="isFullscreen()">
-                    <div class="overlay-info">
-                        @if (mode() === 'channels') {
-                            <span class="overlay-series">{{ currentState()!.seriesName }}</span>
-                            <span class="overlay-episode">{{ currentState()!.episodeTitle }}</span>
-                        } @else {
-                            <span class="overlay-series">{{ selectedSeries()!.name }}</span>
-                            <span class="overlay-episode">{{ currentEpisode()!.title }}</span>
-                        }
-                    </div>
-                </div>
-
+        <div
+          class="series-overlay"
+          [class.visible]="showOverlay()"
+          [class.series-overlay--fs]="isFullscreen()"
+        >
+          <div class="overlay-info">
+            @if (mode() === 'channels') {
+              <span class="overlay-series">{{ currentState()!.seriesName }}</span>
+              <span class="overlay-episode">{{ currentState()!.episodeTitle }}</span>
             } @else {
-                <div class="tv-content">
-                    <div class="series-logo">NOSTALGIA TV</div>
-                    <div class="episode-title">Selecciona un canal</div>
-                </div>
+              <span class="overlay-series">{{ selectedSeries()!.name }}</span>
+              <span class="overlay-episode">{{ currentEpisode()!.title }}</span>
             }
-
-            <div class="crt-scanlines"></div>
-            <div class="crt-glare"></div>
+          </div>
         </div>
+      } @else {
+        <div class="tv-content">
+          <div class="series-logo">NOSTALGIA TV</div>
+          <div class="episode-title">Selecciona un canal</div>
+        </div>
+      }
+
+      <div class="crt-scanlines" [class.hidden]="!activeFilters().scanlineAnimation"></div>
+      <div class="crt-glare"></div>
     </div>
+  </div>
 </div>
 
 <div class="tv-light"></div>
 <div class="floor"></div>
 <div class="scene-overlay" [class.no-glow]="!settings().tvGlowEffect"></div>
 <div class="kid-section">
-    <img src="images/kid-watching.png" alt="Kid watching TV" class="kid-image" />
+  <img src="images/kid-watching.png" alt="Kid watching TV" class="kid-image" />
 </div>
 
 <!-- Remote: Channel Mode -->
 @if (mode() === 'channels') {
-    <div class="remote-control">
-        <div class="remote-header">
-            <button mat-mini-fab (click)="goToLogin()" matTooltip="Login">
-                <mat-icon>person</mat-icon>
-            </button>
-            <h3>CONTROL</h3>
-            <button mat-mini-fab (click)="openSettingsDialog()" matTooltip="Configuración">
-                <mat-icon>settings</mat-icon>
-            </button>
-        </div>
-        <div class="remote-led"></div>
-        <div class="remote-divider"></div>
-
-        <div class="channels-list">
-            @for (channel of channels(); track channel.id) {
-                <button class="channel-btn"
-                    [class.active]="currentChannel()?.id === channel.id"
-                    (click)="selectChannel(channel)">
-                    @if (channel.logoPath) {
-                        <img [src]="apiUrl + channel.logoPath" class="channel-logo" [alt]="channel.name" />
-                    }
-                    <div class="channel-info">
-                        <span class="channel-number">CH {{ $index + 1 }}</span>
-                        <span class="channel-name">{{ channel.name }}</span>
-                    </div>
-                </button>
-            }
-        </div>
-
-        <div class="remote-footer">
-            <div class="media-controls">
-                <button mat-icon-button (click)="toggleMute()">
-                    <mat-icon>{{ isMuted() ? 'volume_off' : 'volume_mute' }}</mat-icon>
-                </button>
-                <button mat-icon-button (click)="volumeDown()">
-                    <mat-icon>volume_down</mat-icon>
-                </button>
-                <button mat-icon-button (click)="volumeUp()">
-                    <mat-icon>volume_up</mat-icon>
-                </button>
-                <button mat-icon-button (click)="toggleFullscreen()">
-                    <mat-icon>fullscreen</mat-icon>
-                </button>
-            </div>
-            <div class="nav-controls">
-                <button mat-stroked-button class="nav-btn" (click)="openSeriesDialog()">SERIES</button>
-                <button mat-stroked-button class="nav-btn nav-btn--secondary" (click)="toggleFiltersPanel()">FILTROS</button>
-            </div>
-        </div>
+  <div class="remote-control">
+    <div class="remote-header">
+      <button mat-mini-fab (click)="goToLogin()" matTooltip="Login">
+        <mat-icon>person</mat-icon>
+      </button>
+      <h3>CONTROL</h3>
+      <button mat-mini-fab (click)="openSettingsDialog()" matTooltip="Configuración">
+        <mat-icon>settings</mat-icon>
+      </button>
     </div>
+    <div class="remote-led"></div>
+    <div class="remote-divider"></div>
+
+    <div class="channels-list">
+      @for (channel of channels(); track channel.id) {
+        <button
+          class="channel-btn"
+          [class.active]="currentChannel()?.id === channel.id"
+          (click)="selectChannel(channel)"
+        >
+          @if (channel.logoPath) {
+            <img [src]="apiUrl + channel.logoPath" class="channel-logo" [alt]="channel.name" />
+          }
+          <div class="channel-info">
+            <span class="channel-number">CH {{ $index + 1 }}</span>
+            <span class="channel-name">{{ channel.name }}</span>
+          </div>
+        </button>
+      }
+    </div>
+
+    <div class="remote-footer">
+      <div class="media-controls">
+        <button mat-icon-button (click)="toggleMute()">
+          <mat-icon>{{ isMuted() ? 'volume_off' : 'volume_mute' }}</mat-icon>
+        </button>
+        <button mat-icon-button (click)="volumeDown()">
+          <mat-icon>volume_down</mat-icon>
+        </button>
+        <button mat-icon-button (click)="volumeUp()">
+          <mat-icon>volume_up</mat-icon>
+        </button>
+        <button mat-icon-button (click)="toggleFullscreen()">
+          <mat-icon>fullscreen</mat-icon>
+        </button>
+      </div>
+      <div class="nav-controls">
+        <button mat-stroked-button class="nav-btn" (click)="openSeriesDialog()">SERIES</button>
+        <button
+          mat-stroked-button
+          class="nav-btn nav-btn--secondary"
+          (click)="toggleFiltersPanel()"
+        >
+          FILTROS
+        </button>
+      </div>
+    </div>
+  </div>
 }
 
 <!-- Remote: Series Mode -->
 @if (mode() === 'series') {
-    <div class="remote-control remote-control--series">
-        <div class="remote-header">
-            <button mat-mini-fab (click)="goToLogin()" matTooltip="Login">
-                <mat-icon>person</mat-icon>
-            </button>
-            <h3>SERIES</h3>
-            <button mat-mini-fab (click)="openSettingsDialog()" matTooltip="Configuración">
-                <mat-icon>settings</mat-icon>
-            </button>
-        </div>
-        <div class="remote-led"></div>
-        <div class="remote-divider"></div>
-
-        <div class="series-panel-header">
-            @if (selectedSeries()?.logoPath) {
-                <img [src]="apiUrl + selectedSeries()!.logoPath" class="series-panel-logo" />
-            }
-            <span class="series-panel-name">{{ selectedSeries()?.name }}</span>
-        </div>
-
-        <div class="season-tabs">
-            @for (season of seasonGroups(); track season) {
-                <button class="season-tab"
-                    [class.active]="selectedEpisodeType() === 'normal' && selectedSeason() === season"
-                    (click)="selectSeason(season)">
-                    T{{ season }}
-                </button>
-            }
-            @if (hasSpecials()) {
-                <button class="season-tab"
-                    [class.active]="selectedEpisodeType() === 'special'"
-                    (click)="selectEpisodeType('special')">
-                    ESP
-                </button>
-            }
-            @if (hasMovies()) {
-                <button class="season-tab"
-                    [class.active]="selectedEpisodeType() === 'movie'"
-                    (click)="selectEpisodeType('movie')">
-                    PEL
-                </button>
-            }
-        </div>
-
-        <div class="remote-divider"></div>
-
-        <label class="random-toggle">
-            <span>Aleatorio</span>
-            <input type="checkbox" [checked]="settings().randomPlayback"
-                (change)="onRandomToggleChange($any($event.target).checked)" />
-        </label>
-
-        <button class="reset-series-btn" (click)="resetSeriesProgress()">
-            ↺ Reiniciar serie
-        </button>
-
-        <div class="remote-divider"></div>
-
-        <div class="episodes-list">
-            @for (ep of episodesForView(); track ep.id) {
-                <button class="episode-btn"
-                    [class.active]="currentEpisode()?.id === ep.id"
-                    [class.watched]="watchedMap()[ep.id]"
-                    (click)="playEpisode(ep)">
-                    <span class="episode-btn-number">{{ ep.episodeNumber }}</span>
-                    <span class="episode-btn-title">{{ ep.title }}</span>
-                    @if (watchedMap()[ep.id]) {
-                        <mat-icon class="watched-icon">check_circle</mat-icon>
-                    }
-                </button>
-            }
-            @empty {
-                <div class="episodes-empty">Sin episodios</div>
-            }
-        </div>
-
-        <div class="remote-footer">
-            <div class="media-controls">
-                <button mat-icon-button (click)="toggleMute()">
-                    <mat-icon>{{ isMuted() ? 'volume_off' : 'volume_mute' }}</mat-icon>
-                </button>
-                <button mat-icon-button (click)="volumeDown()">
-                    <mat-icon>volume_down</mat-icon>
-                </button>
-                <button mat-icon-button (click)="volumeUp()">
-                    <mat-icon>volume_up</mat-icon>
-                </button>
-                <button mat-icon-button (click)="toggleFullscreen()">
-                    <mat-icon>fullscreen</mat-icon>
-                </button>
-            </div>
-            <div class="nav-controls">
-                <button mat-stroked-button class="nav-btn nav-btn--secondary" (click)="toggleFiltersPanel()">FILTROS</button>
-                <button mat-stroked-button class="nav-btn nav-btn--back" (click)="backToChannels()">← CANALES</button>
-            </div>
-        </div>
+  <div class="remote-control remote-control--series">
+    <div class="remote-header">
+      <button mat-mini-fab (click)="goToLogin()" matTooltip="Login">
+        <mat-icon>person</mat-icon>
+      </button>
+      <h3>SERIES</h3>
+      <button mat-mini-fab (click)="openSettingsDialog()" matTooltip="Configuración">
+        <mat-icon>settings</mat-icon>
+      </button>
     </div>
+    <div class="remote-led"></div>
+    <div class="remote-divider"></div>
+
+    <div class="series-panel-header">
+      @if (selectedSeries()?.logoPath) {
+        <img [src]="apiUrl + selectedSeries()!.logoPath" class="series-panel-logo" />
+      }
+      <span class="series-panel-name">{{ selectedSeries()?.name }}</span>
+    </div>
+
+    <div class="season-tabs">
+      @for (season of seasonGroups(); track season) {
+        <button
+          class="season-tab"
+          [class.active]="selectedEpisodeType() === 'normal' && selectedSeason() === season"
+          (click)="selectSeason(season)"
+        >
+          T{{ season }}
+        </button>
+      }
+      @if (hasSpecials()) {
+        <button
+          class="season-tab"
+          [class.active]="selectedEpisodeType() === 'special'"
+          (click)="selectEpisodeType('special')"
+        >
+          ESP
+        </button>
+      }
+      @if (hasMovies()) {
+        <button
+          class="season-tab"
+          [class.active]="selectedEpisodeType() === 'movie'"
+          (click)="selectEpisodeType('movie')"
+        >
+          PEL
+        </button>
+      }
+    </div>
+
+    <div class="remote-divider"></div>
+
+    <label class="random-toggle">
+      <span>Aleatorio</span>
+      <input
+        type="checkbox"
+        [checked]="settings().randomPlayback"
+        (change)="onRandomToggleChange($any($event.target).checked)"
+      />
+    </label>
+
+    <button class="reset-series-btn" (click)="resetSeriesProgress()">↺ Reiniciar serie</button>
+
+    <div class="remote-divider"></div>
+
+    <div class="episodes-list">
+      @for (ep of episodesForView(); track ep.id) {
+        <button
+          class="episode-btn"
+          [class.active]="currentEpisode()?.id === ep.id"
+          [class.watched]="watchedMap()[ep.id]"
+          (click)="playEpisode(ep)"
+        >
+          <span class="episode-btn-number">{{ ep.episodeNumber }}</span>
+          <span class="episode-btn-title">{{ ep.title }}</span>
+          @if (watchedMap()[ep.id]) {
+            <mat-icon class="watched-icon">check_circle</mat-icon>
+          }
+        </button>
+      } @empty {
+        <div class="episodes-empty">Sin episodios</div>
+      }
+    </div>
+
+    <div class="remote-footer">
+      <div class="media-controls">
+        <button mat-icon-button (click)="toggleMute()">
+          <mat-icon>{{ isMuted() ? 'volume_off' : 'volume_mute' }}</mat-icon>
+        </button>
+        <button mat-icon-button (click)="volumeDown()">
+          <mat-icon>volume_down</mat-icon>
+        </button>
+        <button mat-icon-button (click)="volumeUp()">
+          <mat-icon>volume_up</mat-icon>
+        </button>
+        <button mat-icon-button (click)="toggleFullscreen()">
+          <mat-icon>fullscreen</mat-icon>
+        </button>
+      </div>
+      <div class="nav-controls">
+        <button
+          mat-stroked-button
+          class="nav-btn nav-btn--secondary"
+          (click)="toggleFiltersPanel()"
+        >
+          FILTROS
+        </button>
+        <button mat-stroked-button class="nav-btn nav-btn--back" (click)="backToChannels()">
+          ← CANALES
+        </button>
+      </div>
+    </div>
+  </div>
 }
 
 <!-- Series Dialog -->
 @if (showSeriesDialog()) {
-    <div class="dialog-backdrop" (click)="closeSeriesDialog()">
-        <div class="dialog-panel" (click)="$event.stopPropagation()">
-            <div class="dialog-header">
-                <span class="dialog-title">SERIES</span>
-                <button mat-icon-button (click)="closeSeriesDialog()">
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
+  <div class="dialog-backdrop" (click)="closeSeriesDialog()">
+    <div class="dialog-panel" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <span class="dialog-title">SERIES</span>
+        <button mat-icon-button (click)="closeSeriesDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
 
-            <div class="dialog-filters">
-                <input class="retro-input" placeholder="Buscar por nombre..."
-                    [value]="seriesSearchName()"
-                    (input)="onSeriesSearchChange($any($event.target).value)" />
-                <select class="retro-select" (change)="onChannelFilterChange($any($event.target).value)">
-                    <option value="">Todos los canales</option>
-                    @for (channel of channels(); track channel.id) {
-                        <option [value]="channel.id">{{ channel.name }}</option>
-                    }
-                </select>
-            </div>
+      <div class="dialog-filters">
+        <input
+          class="retro-input"
+          placeholder="Buscar por nombre..."
+          [value]="seriesSearchName()"
+          (input)="onSeriesSearchChange($any($event.target).value)"
+        />
+        <select class="retro-select" (change)="onChannelFilterChange($any($event.target).value)">
+          <option value="">Todos los canales</option>
+          @for (channel of channels(); track channel.id) {
+            <option [value]="channel.id">{{ channel.name }}</option>
+          }
+        </select>
+      </div>
 
-            @if (seriesLoading()) {
-                <div class="dialog-empty">Cargando...</div>
-            } @else {
-                <div class="dialog-list">
-                    @for (serie of allSeries(); track serie.id) {
-                        <div class="series-item" (click)="enterSeriesMode(serie)">
-                            @if (serie.logoPath) {
-                                <img [src]="apiUrl + serie.logoPath" class="series-item-logo" />
-                            } @else {
-                                <div class="series-item-logo-placeholder">
-                                    <mat-icon>tv</mat-icon>
-                                </div>
-                            }
-                            <div class="series-item-info">
-                                <span class="series-item-name">{{ serie.name }}</span>
-                                @if (serie.startDate) {
-                                    <span class="series-item-year">{{ serie.startDate | date:'yyyy' }}</span>
-                                }
-                            </div>
-                        </div>
-                    }
-                    @empty {
-                        <div class="dialog-empty">No se encontraron series</div>
-                    }
+      @if (seriesLoading()) {
+        <div class="dialog-empty">Cargando...</div>
+      } @else {
+        <div class="dialog-list">
+          @for (serie of allSeries(); track serie.id) {
+            <div class="series-item" (click)="enterSeriesMode(serie)">
+              @if (serie.logoPath) {
+                <img [src]="apiUrl + serie.logoPath" class="series-item-logo" />
+              } @else {
+                <div class="series-item-logo-placeholder">
+                  <mat-icon>tv</mat-icon>
                 </div>
-                <div class="dialog-pagination">
-                    <button mat-icon-button [disabled]="seriesPage() === 1" (click)="seriesPrevPage()">
-                        <mat-icon>chevron_left</mat-icon>
-                    </button>
-                    <span class="pagination-info">{{ seriesPage() }} / {{ seriesTotalPages() }}</span>
-                    <button mat-icon-button [disabled]="seriesPage() === seriesTotalPages()" (click)="seriesNextPage()">
-                        <mat-icon>chevron_right</mat-icon>
-                    </button>
-                </div>
-            }
+              }
+              <div class="series-item-info">
+                <span class="series-item-name">{{ serie.name }}</span>
+                @if (serie.startDate) {
+                  <span class="series-item-year">{{ serie.startDate | date: 'yyyy' }}</span>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="dialog-empty">No se encontraron series</div>
+          }
         </div>
+        <div class="dialog-pagination">
+          <button mat-icon-button [disabled]="seriesPage() === 1" (click)="seriesPrevPage()">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="pagination-info">{{ seriesPage() }} / {{ seriesTotalPages() }}</span>
+          <button
+            mat-icon-button
+            [disabled]="seriesPage() === seriesTotalPages()"
+            (click)="seriesNextPage()"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      }
     </div>
+  </div>
 }
 
 <!-- Settings Dialog -->
 @if (showSettingsDialog()) {
-    <div class="dialog-backdrop" (click)="closeSettingsDialog()">
-        <div class="dialog-panel dialog-panel--settings" (click)="$event.stopPropagation()">
-            <div class="dialog-header">
-                <span class="dialog-title">CONFIGURACIÓN</span>
-                <button mat-icon-button (click)="closeSettingsDialog()">
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
-            <div class="settings-list">
-                <label class="setting-item">
-                    <span>Siempre mostrar filtros</span>
-                    <input type="checkbox" [checked]="settings().alwaysShowFilters"
-                        (change)="updateSetting('alwaysShowFilters', $any($event.target).checked)" />
-                </label>
-                <label class="setting-item">
-                    <span>Ver bumpers</span>
-                    <input type="checkbox" [checked]="settings().showBumpers"
-                        (change)="updateSetting('showBumpers', $any($event.target).checked)" />
-                </label>
-                <label class="setting-item">
-                    <span>Ver anuncios de época</span>
-                    <input type="checkbox" [checked]="settings().showAds"
-                        (change)="updateSetting('showAds', $any($event.target).checked)" />
-                </label>
-                <label class="setting-item">
-                    <span>Efecto brillo TV</span>
-                    <input type="checkbox" [checked]="settings().tvGlowEffect"
-                        (change)="updateSetting('tvGlowEffect', $any($event.target).checked)" />
-                </label>
-                <label class="setting-item">
-                    <span>Incluir películas</span>
-                    <input type="checkbox" [checked]="settings().includeMovies"
-                        (change)="updateSetting('includeMovies', $any($event.target).checked)" />
-                </label>
-                <label class="setting-item">
-                    <span>Incluir especiales</span>
-                    <input type="checkbox" [checked]="settings().includeSpecials"
-                        (change)="updateSetting('includeSpecials', $any($event.target).checked)" />
-                </label>
-                <div class="setting-item setting-item--action">
-                    <span>Reiniciar todo lo visto</span>
-                    <button class="reset-btn" (click)="resetAllProgress(); closeSettingsDialog()">↺</button>
-                </div>
-            </div>
+  <div class="dialog-backdrop" (click)="closeSettingsDialog()">
+    <div class="dialog-panel dialog-panel--settings" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <span class="dialog-title">CONFIGURACIÓN</span>
+        <button mat-icon-button (click)="closeSettingsDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="settings-list">
+        <label class="setting-item">
+          <span>Siempre mostrar filtros</span>
+          <input
+            type="checkbox"
+            [checked]="settings().alwaysShowFilters"
+            (change)="updateSetting('alwaysShowFilters', $any($event.target).checked)"
+          />
+        </label>
+        <label class="setting-item">
+          <span>Ver bumpers</span>
+          <input
+            type="checkbox"
+            [checked]="settings().showBumpers"
+            (change)="updateSetting('showBumpers', $any($event.target).checked)"
+          />
+        </label>
+        <label class="setting-item">
+          <span>Ver anuncios de época</span>
+          <input
+            type="checkbox"
+            [checked]="settings().showAds"
+            (change)="updateSetting('showAds', $any($event.target).checked)"
+          />
+        </label>
+        <label class="setting-item">
+          <span>Efecto brillo TV</span>
+          <input
+            type="checkbox"
+            [checked]="settings().tvGlowEffect"
+            (change)="updateSetting('tvGlowEffect', $any($event.target).checked)"
+          />
+        </label>
+        <label class="setting-item">
+          <span>Incluir películas</span>
+          <input
+            type="checkbox"
+            [checked]="settings().includeMovies"
+            (change)="updateSetting('includeMovies', $any($event.target).checked)"
+          />
+        </label>
+        <label class="setting-item">
+          <span>Incluir especiales</span>
+          <input
+            type="checkbox"
+            [checked]="settings().includeSpecials"
+            (change)="updateSetting('includeSpecials', $any($event.target).checked)"
+          />
+        </label>
+        <div class="setting-item setting-item--action">
+          <span>Reiniciar todo lo visto</span>
+          <button class="reset-btn" (click)="resetAllProgress(); closeSettingsDialog()">↺</button>
         </div>
+      </div>
     </div>
+  </div>
 }

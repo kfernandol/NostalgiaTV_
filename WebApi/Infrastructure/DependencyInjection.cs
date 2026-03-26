@@ -29,6 +29,7 @@ namespace Infrastructure
             //Services
             services.AddSingleton<ChannelBroadcastService>();
 
+            services.AddScoped<ChannelScheduleService>();
             services.AddScoped<FileUploadService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ISeriesService, SeriesService>();
@@ -41,6 +42,7 @@ namespace Infrastructure
             services.AddScoped<SeriesFolderService>();
 
             //Background Services
+            services.AddHostedService<ScheduleInitializerService>();
             services.AddHostedService<TokenCleanupService>();
             services.AddHostedService(sp => sp.GetRequiredService<ChannelBroadcastService>());
 

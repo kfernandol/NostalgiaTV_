@@ -60,7 +60,22 @@ interface PagedResult<T> {
   pageSize: number;
   totalPages: number;
 }
+
 type AppMode = 'channels' | 'series';
+
+interface ScheduleEntry {
+    id: number;
+    channelId: number;
+    episodeId: number;
+    episodeTitle: string;
+    seriesName: string;
+    seriesLogoPath?: string;
+    filePath: string;
+    startTime: string;
+    endTime: string;
+    season: number;
+    episodeNumber: number;
+}
 
 @Component({
   selector: 'app-retro-tv',
@@ -114,6 +129,10 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   selectedEpisodeType = signal<string>('normal');
   currentEpisode = signal<EpisodeResponse | null>(null);
 
+  showScheduleDialog = signal<boolean>(false);
+  scheduleEntries = signal<ScheduleEntry[]>([]);
+  scheduleLoading = signal<boolean>(false);
+
   // Watched state for current series
   watchedMap = signal<Record<number, boolean>>({});
 
@@ -164,6 +183,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   private hubConnection?: signalR.HubConnection;
   private overlayTimeout?: ReturnType<typeof setTimeout>;
   private progressInterval?: ReturnType<typeof setInterval>;
+  private readonly BUFFER_SECONDS = 20;
+  private pendingNextEpisodePath: string | null = null;
+
 
   constructor() {
     effect(() => {
@@ -257,6 +279,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadChannelEpisode(state: ChannelState): void {
+    this.pendingNextEpisodePath = null; // limpiar pending
     const video = this.videoPlayer?.nativeElement;
     if (!video) return;
     video.src = `${this.apiUrl}${state.filePath}`;
@@ -276,20 +299,57 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private connectToHub(channelId: number): void {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${this.apiUrl}/hubs/channel`)
-      .withAutomaticReconnect()
-      .build();
+        .withUrl(`${this.apiUrl}/hubs/channel`)
+        .withAutomaticReconnect()
+        .build();
+
     this.hubConnection.on('ChannelState', (state: ChannelState) => {
-      const current = this.currentState();
-      if (current?.episodeId !== state.episodeId) {
-        this.currentState.set(state);
-        this.loadChannelEpisode(state);
-      }
+        const current = this.currentState();
+        const video = this.videoPlayer?.nativeElement;
+        if (!video) return;
+
+        if (current?.episodeId !== state.episodeId) {
+            // Episodio cambió en el servidor
+            const clientSecond = video.currentTime;
+            const remainingInCurrent = video.duration - clientSecond;
+
+            if (remainingInCurrent > 0 && remainingInCurrent <= this.BUFFER_SECONDS) {
+                // Cliente está casi terminando — encolar el siguiente
+                this.pendingNextEpisodePath = `${this.apiUrl}${state.filePath}`;
+                video.addEventListener('ended', () => this.playPendingNext(state), { once: true });
+            } else {
+                // Diferencia mayor al buffer — saltar directo al nuevo episodio
+                this.currentState.set(state);
+                this.loadChannelEpisode(state);
+            }
+        } else {
+            // Mismo episodio — verificar sincronización
+            this.currentState.set(state);
+            this.syncVideoPosition(video, state.currentSecond);
+        }
     });
+
     this.hubConnection.start().then(() => {
-      this.hubConnection!.invoke('JoinChannel', channelId);
+        this.hubConnection!.invoke('JoinChannel', channelId);
     });
-  }
+}
+
+private syncVideoPosition(video: HTMLVideoElement, serverSecond: number): void {
+    if (!video.duration) return;
+    const diff = Math.abs(video.currentTime - serverSecond);
+
+    if (diff > this.BUFFER_SECONDS) {
+        // Demasiado desfasado — sincronizar
+        video.currentTime = serverSecond;
+    }
+    // Si diff <= BUFFER_SECONDS → no hacer nada, dejar al cliente seguir
+}
+
+private playPendingNext(state: ChannelState): void {
+    this.pendingNextEpisodePath = null;
+    this.currentState.set(state);
+    this.loadChannelEpisode(state);
+}
 
   enterSeriesMode(serie: SeriesResponse): void {
     this.stopProgressTracking();
@@ -640,4 +700,30 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     clearTimeout(this.overlayFsTimeout);
     this.overlayFsTimeout = setTimeout(() => this.isHovering.set(false), 3000);
   };
+
+  openScheduleDialog(): void {
+    const channel = this.currentChannel();
+    if (!channel) return;
+    this.showScheduleDialog.set(true);
+    this.scheduleLoading.set(true);
+    this.http
+      .get<ScheduleEntry[]>(`${this.apiUrl}/api/v1/public/channels/${channel.id}/schedule`)
+      .subscribe({
+        next: (data) => {
+          this.scheduleEntries.set(data);
+          this.scheduleLoading.set(false);
+        },
+        error: () => this.scheduleLoading.set(false),
+      });
+  }
+
+  closeScheduleDialog(): void {
+    this.showScheduleDialog.set(false);
+    this.scheduleEntries.set([]);
+  }
+
+  isCurrentScheduleEntry(entry: ScheduleEntry): boolean {
+    const now = new Date();
+    return new Date(entry.startTime) <= now && new Date(entry.endTime) > now;
+}
 }

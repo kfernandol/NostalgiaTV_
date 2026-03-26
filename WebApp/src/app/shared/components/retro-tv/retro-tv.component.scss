@@ -773,10 +773,11 @@
 }
 
 .dialog-title {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.7rem;
-  color: #6bcf7f;
-  text-shadow: 0 0 10px rgba(107, 207, 127, 0.5);
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    color: #6bcf7f;
+    text-shadow: 0 0 10px rgba(107, 207, 127, 0.5);
+    letter-spacing: 2px;
 }
 
 .dialog-filters {
@@ -874,13 +875,13 @@
 
 .series-item-name {
   font-family: 'VT323', monospace;
-  font-size: 1rem;
+  font-size: 1.3rem;
   color: #fff;
 }
 
 .series-item-year {
   font-family: 'VT323', monospace;
-  font-size: 0.85rem;
+  font-size: 1.1rem;
   color: #ffd93d;
 }
 
@@ -1387,4 +1388,83 @@ input[type='range'] {
     cursor: pointer;
     box-shadow: 0 0 4px rgba(107, 207, 127, 0.6);
   }
+}
+
+.dialog-panel--schedule { max-width: 750px; }
+
+.schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(107, 207, 127, 0.1);
+    transition: all 0.2s ease;
+
+    &--current {
+        border-color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.08);
+    }
+}
+
+.schedule-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    flex-shrink: 0;
+    min-width: 52px;
+}
+
+.schedule-start {
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    color: #ffd93d;
+    line-height: 1;
+}
+
+.schedule-end {
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.schedule-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-series {
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    color: #ff6b6b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.schedule-episode {
+    font-family: 'VT323', monospace;
+    font-size: 1.1rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.schedule-meta {
+    font-family: 'VT323', monospace;
+    font-size: 0.85rem;
+    color: #6bcf7f;
+}
+
+.schedule-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 4px;
 }

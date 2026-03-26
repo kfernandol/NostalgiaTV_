@@ -222,13 +222,10 @@
       </div>
       <div class="nav-controls">
         <button mat-stroked-button class="nav-btn" (click)="openSeriesDialog()">SERIES</button>
-        <button
-          mat-stroked-button
-          class="nav-btn nav-btn--secondary"
-          (click)="toggleFiltersPanel()"
-        >
-          FILTROS
-        </button>
+        <button mat-stroked-button class="nav-btn nav-btn--secondary"
+            [disabled]="!currentChannel()"
+            (click)="openScheduleDialog()">PROGRAMACIÓN</button>
+        <button mat-stroked-button class="nav-btn nav-btn--secondary" (click)="toggleFiltersPanel()">FILTROS</button>
       </div>
     </div>
   </div>
@@ -485,4 +482,46 @@
       </div>
     </div>
   </div>
+}
+<!-- Schedule Dialog -->
+@if (showScheduleDialog()) {
+    <div class="dialog-backdrop" (click)="closeScheduleDialog()">
+        <div class="dialog-panel dialog-panel--schedule" (click)="$event.stopPropagation()">
+            <div class="dialog-header">
+                <span class="dialog-title">PROGRAMACIÓN</span>
+                <button mat-icon-button (click)="closeScheduleDialog()">
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+
+            @if (scheduleLoading()) {
+                <div class="dialog-empty">Cargando...</div>
+            } @else {
+                <div class="dialog-list">
+                    @for (entry of scheduleEntries(); track entry.id) {
+                        <div class="schedule-item" [class.schedule-item--current]="isCurrentScheduleEntry(entry)">
+                          <div class="schedule-time">
+                              <span class="schedule-start">{{ entry.startTime | date:'HH:mm' }}</span>
+                              <span class="schedule-end">{{ entry.endTime | date:'HH:mm' }}</span>
+                          </div>
+                          <div class="schedule-info">
+                              <span class="schedule-series">{{ entry.seriesName }}</span>
+                              <span class="schedule-episode">{{ entry.episodeTitle }}</span>
+                              <span class="schedule-meta">
+                                  @if (entry.season > 0) { T{{ entry.season }} }
+                                  @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
+                              </span>
+                          </div>
+                          @if (entry.seriesLogoPath) {
+                              <img [src]="apiUrl + entry.seriesLogoPath" class="schedule-logo" />
+                          }
+                      </div>
+                    }
+                    @empty {
+                        <div class="dialog-empty">Sin programación disponible</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 }

@@ -4,6 +4,7 @@ using ApplicationCore.Models;
 using Infrastructure.Contexts;
 using Infrastructure.Helpers;
 using Infrastructure.Hubs;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,10 +18,7 @@ namespace Infrastructure.BackgroundServices
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHubContext<ChannelHub> _hubContext;
         private readonly ILogger<ChannelBroadcastService> _logger;
-
-        // In-memory state per channel
         private readonly Dictionary<int, ChannelBroadcastState> _states = new();
-        private readonly Dictionary<int, List<Episode>> _playlists = new();
 
         public ChannelBroadcastService(
             IServiceScopeFactory scopeFactory,
@@ -36,9 +34,20 @@ namespace Infrastructure.BackgroundServices
         {
             await InitializeStates();
 
+            var tick = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
                 await BroadcastStates();
+
+                // Cleanup old schedule entries every hour
+                if (tick % 3600 == 0)
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var scheduleService = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
+                    await scheduleService.CleanupOldEntriesAsync();
+                }
+
+                tick++;
                 await Task.Delay(1000, stoppingToken);
             }
         }
@@ -47,41 +56,23 @@ namespace Infrastructure.BackgroundServices
         {
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+            var scheduleService = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
 
-            var channels = await context.Channels
-                .Include(c => c.Series)
-                .ToListAsync();
-
-            _logger.LogInformation("Found {count} channels", channels.Count);
+            var channels = await context.Channels.ToListAsync();
 
             foreach (var channel in channels)
             {
-                var seriesIds = channel.Series.Select(s => s.Id).ToList();
-                _logger.LogInformation("Channel {id} has series: {series}", channel.Id, string.Join(",", seriesIds));
+                var entry = await scheduleService.GetCurrentEntryAsync(channel.Id);
+                if (entry == null) continue;
 
-                var episodes = await context.Episodes
-                    .Include(e => e.Series)
-                    .Where(e => seriesIds.Contains(e.SeriesId) && e.FilePath != null)
-                    .OrderBy(e => e.SeriesId)
-                    .ThenBy(e => e.Season)
-                    .ThenBy(e => e.Id)
-                    .ToListAsync();
-
-                _logger.LogInformation("Channel {id} has {count} episodes", channel.Id, episodes.Count);
-
-                if (!episodes.Any()) continue;
-
-                var firstEpisode = episodes[0];
-                var duration = await VideoHelper.GetVideoDurationAsync(firstEpisode.FilePath!);
-
-                _playlists[channel.Id] = episodes;
+                var currentSecond = (DateTime.UtcNow - entry.StartTime).TotalSeconds;
                 _states[channel.Id] = new ChannelBroadcastState
                 {
                     ChannelId = channel.Id,
-                    CurrentEpisodeId = firstEpisode.Id,
-                    CurrentSecond = 0,
-                    StartedAt = DateTime.UtcNow,
-                    DurationSeconds = duration
+                    CurrentEpisodeId = entry.EpisodeId,
+                    CurrentSecond = currentSecond,
+                    StartedAt = entry.StartTime,
+                    DurationSeconds = (entry.EndTime - entry.StartTime).TotalSeconds
                 };
             }
         }
@@ -90,14 +81,23 @@ namespace Infrastructure.BackgroundServices
         {
             using var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+            var scheduleService = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
 
             foreach (var (channelId, state) in _states)
             {
                 state.CurrentSecond = (DateTime.UtcNow - state.StartedAt).TotalSeconds;
 
-                // Advance to next episode if current one ended
+                // Advance if current entry ended
                 if (state.CurrentSecond >= state.DurationSeconds)
-                    await AdvanceEpisodeAsync(channelId, state);
+                {
+                    var entry = await scheduleService.GetCurrentEntryAsync(channelId);
+                    if (entry == null) continue;
+
+                    state.CurrentEpisodeId = entry.EpisodeId;
+                    state.CurrentSecond = (DateTime.UtcNow - entry.StartTime).TotalSeconds;
+                    state.StartedAt = entry.StartTime;
+                    state.DurationSeconds = (entry.EndTime - entry.StartTime).TotalSeconds;
+                }
 
                 var episode = await context.Episodes
                     .Include(e => e.Series)
@@ -105,9 +105,7 @@ namespace Infrastructure.BackgroundServices
 
                 if (episode == null) continue;
 
-                var playlist = _playlists[channelId];
-                var currentIndex = playlist.FindIndex(e => e.Id == state.CurrentEpisodeId);
-                var nextEpisode = playlist.ElementAtOrDefault(currentIndex + 1) ?? playlist[0];
+                var next = await scheduleService.GetNextEntryAsync(channelId);
 
                 var response = new ChannelStateResponse
                 {
@@ -118,9 +116,8 @@ namespace Infrastructure.BackgroundServices
                     SeriesName = episode.Series.Name,
                     SeriesLogoPath = episode.Series.LogoPath,
                     CurrentSecond = state.CurrentSecond,
-                    // NEW
-                    NextEpisodeId = nextEpisode.Id,
-                    NextEpisodeTitle = nextEpisode.Title,
+                    NextEpisodeId = next?.EpisodeId ?? 0,
+                    NextEpisodeTitle = next?.Episode?.Title,
                     SecondsUntilNext = state.DurationSeconds - state.CurrentSecond
                 };
 
@@ -129,92 +126,64 @@ namespace Infrastructure.BackgroundServices
             }
         }
 
-        private async Task AdvanceEpisodeAsync(int channelId, ChannelBroadcastState state)
-        {
-            var playlist = _playlists[channelId];
-            var currentIndex = playlist.FindIndex(e => e.Id == state.CurrentEpisodeId);
-            var next = playlist.ElementAtOrDefault(currentIndex + 1) ?? playlist[0];
-
-            var duration = await VideoHelper.GetVideoDurationAsync(next.FilePath!);
-
-            state.CurrentEpisodeId = next.Id;
-            state.CurrentSecond = 0;
-            state.StartedAt = DateTime.UtcNow;
-            state.DurationSeconds = duration;
-
-            _logger.LogInformation("Channel {id} advanced to episode {episodeId}", channelId, next.Id);
-        }
-
         public ChannelBroadcastState? GetState(int channelId) =>
             _states.TryGetValue(channelId, out var state) ? state : null;
 
-        public Episode? GetCurrentEpisode(int channelId)
+        public async Task<ChannelStateResponse?> GetStateResponseAsync(int channelId)
         {
-            if (!_states.TryGetValue(channelId, out var state)) return null;
-            if (!_playlists.TryGetValue(channelId, out var playlist)) return null;
-            return playlist.FirstOrDefault(e => e.Id == state.CurrentEpisodeId);
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
+            var scheduleService = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
+
+            var entry = await scheduleService.GetCurrentEntryAsync(channelId);
+            if (entry == null) return null;
+
+            var next = await scheduleService.GetNextEntryAsync(channelId);
+            var currentSecond = (DateTime.UtcNow - entry.StartTime).TotalSeconds;
+            var duration = (entry.EndTime - entry.StartTime).TotalSeconds;
+
+            return new ChannelStateResponse
+            {
+                ChannelId = channelId,
+                EpisodeId = entry.EpisodeId,
+                EpisodeTitle = entry.Episode.Title,
+                FilePath = entry.Episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
+                SeriesName = entry.Episode.Series.Name,
+                SeriesLogoPath = entry.Episode.Series.LogoPath,
+                CurrentSecond = currentSecond,
+                NextEpisodeId = next?.EpisodeId ?? 0,
+                NextEpisodeTitle = next?.Episode?.Title,
+                SecondsUntilNext = duration - currentSecond
+            };
         }
 
         public async Task ReloadChannelAsync(int channelId)
         {
             using var scope = _scopeFactory.CreateScope();
+            var scheduleService = scope.ServiceProvider.GetRequiredService<ChannelScheduleService>();
+
+            // Clear existing schedule for this channel and regenerate
             var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
-
-            var channel = await context.Channels
-                .Include(c => c.Series)
-                .FirstOrDefaultAsync(c => c.Id == channelId);
-
-            if (channel == null) return;
-
-            var seriesIds = channel.Series.Select(s => s.Id).ToList();
-            var episodes = await context.Episodes
-                .Include(e => e.Series)
-                .Where(e => seriesIds.Contains(e.SeriesId) && e.FilePath != null)
-                .OrderBy(e => e.SeriesId)
-                .ThenBy(e => e.Season)
-                .ThenBy(e => e.Id)
+            var old = await context.ChannelScheduleEntries
+                .Where(e => e.ChannelId == channelId && e.StartTime > DateTime.UtcNow)
                 .ToListAsync();
+            context.ChannelScheduleEntries.RemoveRange(old);
+            await context.SaveChangesAsync();
 
-            if (!episodes.Any())
+            var entry = await scheduleService.GetCurrentEntryAsync(channelId);
+            if (entry == null)
             {
                 _states.Remove(channelId);
-                _playlists.Remove(channelId);
                 return;
             }
 
-            _playlists[channelId] = episodes;
             _states[channelId] = new ChannelBroadcastState
             {
                 ChannelId = channelId,
-                CurrentEpisodeId = episodes[0].Id,
-                CurrentSecond = 0,
-                StartedAt = DateTime.UtcNow
-            };
-        }
-
-        public async Task<ChannelStateResponse?> GetStateResponseAsync(int channelId)
-        {
-            var state = GetState(channelId);
-            if (state == null) return null;
-
-            using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<NostalgiaTVContext>();
-
-            var episode = await context.Episodes
-                .Include(e => e.Series)
-                .FirstOrDefaultAsync(e => e.Id == state.CurrentEpisodeId);
-
-            if (episode == null) return null;
-
-            return new ChannelStateResponse
-            {
-                ChannelId = channelId,
-                EpisodeId = episode.Id,
-                EpisodeTitle = episode.Title,
-                FilePath = episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
-                SeriesName = episode.Series.Name,
-                SeriesLogoPath = episode.Series.LogoPath,
-                CurrentSecond = state.CurrentSecond
+                CurrentEpisodeId = entry.EpisodeId,
+                CurrentSecond = (DateTime.UtcNow - entry.StartTime).TotalSeconds,
+                StartedAt = entry.StartTime,
+                DurationSeconds = (entry.EndTime - entry.StartTime).TotalSeconds
             };
         }
     }

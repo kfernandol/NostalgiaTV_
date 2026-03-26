@@ -21,6 +21,7 @@ namespace Infrastructure.Contexts
         public DbSet<EpisodeType> EpisodeTypes { get; set; }
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelState> ChannelStates { get; set; }
+        public DbSet<ChannelScheduleEntry> ChannelScheduleEntries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

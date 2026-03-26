@@ -19,17 +19,21 @@ namespace WebApi.Controllers
         private readonly ChannelBroadcastService _broadcastService;
         private readonly IEpisodeService _episodeService;
         private readonly ISeriesService _seriesService;
+        private readonly ChannelScheduleService _scheduleService;
 
         public PublicController(
             IChannelService channelService,
             ChannelBroadcastService broadcastService,
             IEpisodeService episodeService,
-            ISeriesService seriesService)
+            ISeriesService seriesService,
+            ChannelScheduleService scheduleService)
         {
             _channelService = channelService;
             _broadcastService = broadcastService;
             _episodeService = episodeService;
             _seriesService = seriesService;
+            _seriesService = seriesService;
+            _scheduleService = scheduleService;
         }
 
         [HttpGet("channels/{channelId}/state")]
@@ -51,5 +55,8 @@ namespace WebApi.Controllers
 
         [HttpGet("series/{seriesId}/episodes")]
         public async Task<IActionResult> GetEpisodesBySeries(int seriesId) => Ok(await _episodeService.GetBySeriesPublicAsync(seriesId));
+
+        [HttpGet("channels/{channelId}/schedule")]
+        public async Task<IActionResult> GetSchedule(int channelId) => Ok(await _scheduleService.GetScheduleAsync(channelId));
     }
 }

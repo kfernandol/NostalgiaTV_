@@ -166,8 +166,9 @@ namespace Infrastructure.Services
 
                     if (!wasManuallyEdited)
                     {
-                        // Not edited — safe to update title from filename
-                        existing.Title = fileTitle;
+                        var (parsedTitle, parsedNumber) = ParseFileName(fileTitle);
+                        existing.Title = parsedTitle;
+                        if (parsedNumber > 0) existing.EpisodeNumber = parsedNumber;
                     }
 
                     existing.FilePath = filePath;
@@ -176,14 +177,16 @@ namespace Infrastructure.Services
                 }
                 else
                 {
-                    // New file — create with filename as title
+                    // New file — create with parsed title and episode number
+                    var (parsedTitle, parsedNumber) = ParseFileName(fileTitle);
+
                     _context.Episodes.Add(new Episode
                     {
-                        Title = fileTitle,
+                        Title = parsedTitle,
                         FilePath = filePath,
                         SeriesId = seriesId,
                         Season = season,
-                        EpisodeNumber = 0,
+                        EpisodeNumber = parsedNumber,
                         EpisodeTypeId = episodeTypeId
                     });
                 }
@@ -199,6 +202,16 @@ namespace Infrastructure.Services
         }
 
         private static string NormalizePath(string path) => path.Replace("\\", "/").ToLowerInvariant().Trim();
+
+        private static (string Title, int EpisodeNumber) ParseFileName(string fileName)
+        {
+            // Patrones: "01 Nombre", "01. Nombre", "01 - Nombre", "S01E01 Nombre", "E01 Nombre"
+            var match = System.Text.RegularExpressions.Regex.Match(fileName, @"^(?:[Ss]\d+)?[Ee]?(\d{1,3})[\s\.\-_]+(.+)$");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var num))
+                return (match.Groups[2].Value.Trim().Replace("_", " "), num);
+
+            return (fileName, 0);
+        }
 
         public async Task<PagedResult<SeriesResponse>> GetPublicAsync(SeriesFilterRequest filter)
         {

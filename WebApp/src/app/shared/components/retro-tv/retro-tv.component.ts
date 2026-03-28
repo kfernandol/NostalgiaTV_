@@ -64,17 +64,17 @@ interface PagedResult<T> {
 type AppMode = 'channels' | 'series';
 
 interface ScheduleEntry {
-    id: number;
-    channelId: number;
-    episodeId: number;
-    episodeTitle: string;
-    seriesName: string;
-    seriesLogoPath?: string;
-    filePath: string;
-    startTime: string;
-    endTime: string;
-    season: number;
-    episodeNumber: number;
+  id: number;
+  channelId: number;
+  episodeId: number;
+  episodeTitle: string;
+  seriesName: string;
+  seriesLogoPath?: string;
+  filePath: string;
+  startTime: string;
+  endTime: string;
+  season: number;
+  episodeNumber: number;
 }
 
 @Component({
@@ -105,6 +105,15 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   isFullscreen = signal<boolean>(false);
   apiUrl = environment.apiUrl;
 
+  // Playback controls (series mode)
+  isPaused = signal<boolean>(false);
+  progressPercent = signal<number>(0);
+  currentTimeFormatted = signal<string>('0:00');
+  durationFormatted = signal<string>('0:00');
+  audioTracks = signal<any[]>([]);
+  currentAudioTrack = signal<number>(0);
+  volumeLevel = signal<number>(1);
+
   private overlayFsTimeout?: ReturnType<typeof setTimeout>;
   private isEpisodeOverlay = signal<boolean>(false);
   private isHovering = signal<boolean>(false);
@@ -133,8 +142,10 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   scheduleEntries = signal<ScheduleEntry[]>([]);
   scheduleLoading = signal<boolean>(false);
 
-  // Watched state for current series
   watchedMap = signal<Record<number, boolean>>({});
+
+  // iOS AV1 detection
+  private readonly supportsAV1 = this.detectAV1Support();
 
   seasonGroups = computed(() => {
     const episodes = this.seriesEpisodes();
@@ -183,9 +194,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   private hubConnection?: signalR.HubConnection;
   private overlayTimeout?: ReturnType<typeof setTimeout>;
   private progressInterval?: ReturnType<typeof setInterval>;
+  private uiUpdateInterval?: ReturnType<typeof setInterval>;
   private readonly BUFFER_SECONDS = 20;
   private pendingNextEpisodePath: string | null = null;
-
 
   constructor() {
     effect(() => {
@@ -202,10 +213,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
     document.addEventListener('mousemove', this.fsMouseMoveHandler);
     document.addEventListener('fullscreenchange', this.fullscreenHandler);
-
-    document.addEventListener('fullscreenchange', () => {
-      this.isFullscreen.set(!!document.fullscreenElement);
-    });
 
     this.route.queryParams.subscribe((params) => {
       if (params['serie']) {
@@ -227,10 +234,143 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.hubConnection?.stop();
     clearTimeout(this.overlayTimeout);
     clearInterval(this.progressInterval);
+    clearInterval(this.uiUpdateInterval);
     document.removeEventListener('fullscreenchange', this.fullscreenHandler);
     document.removeEventListener('mousemove', this.fsMouseMoveHandler);
     clearTimeout(this.overlayFsTimeout);
   }
+
+  // ── iOS / AV1 ──────────────────────────────────────────────────────────────
+
+  private detectAV1Support(): boolean {
+    const video = document.createElement('video');
+    return (
+      video.canPlayType('video/webm; codecs="av01.0.05M.08"') !== '' ||
+      video.canPlayType('video/mp4; codecs="av01.0.05M.08"') !== ''
+    );
+  }
+
+  private buildVideoSrc(filePath: string): string {
+    const cleanPath = filePath.replace('wwwroot', '').replace(/\\/g, '/');
+    const fullUrl = `${this.apiUrl}${cleanPath}`;
+
+    // iOS no soporta AV1 en hardware, mostrar advertencia en consola y retornar igual
+    // En un futuro se puede agregar un fallback path si se tienen archivos H.264
+    if (!this.supportsAV1) {
+      console.warn('[NostalgiaTV] AV1 not supported on this device. Video may not play correctly.');
+    }
+
+    return fullUrl;
+  }
+
+  // ── Audio Tracks ───────────────────────────────────────────────────────────
+
+  private initAudioTracks(video: HTMLVideoElement): void {
+    // La API AudioTrackList es experimental — verificar soporte
+    const tracks = (video as any).audioTracks;
+    if (!tracks || tracks.length === 0) {
+      this.audioTracks.set([]);
+      return;
+    }
+
+    const list: any[] = [];
+    for (let i = 0; i < tracks.length; i++) {
+      list.push(tracks[i]);
+    }
+    this.audioTracks.set(list);
+
+    // Priorizar español
+    this.setPreferredAudioTrack(video, list);
+  }
+
+  private setPreferredAudioTrack(video: HTMLVideoElement, tracks: any[]): void {
+    const tracks_ = (video as any).audioTracks;
+    if (!tracks_ || tracks_.length === 0) return;
+
+    const spanishKeywords = ['spa', 'es', 'esp', 'spanish', 'español', 'castellano'];
+
+    let spanishIndex = -1;
+    for (let i = 0; i < tracks_.length; i++) {
+      const t = tracks_[i] as any;
+      const lang = (t.language || t.lang || '').toLowerCase();
+      const label = (t.label || '').toLowerCase();
+      if (spanishKeywords.some((kw) => lang.includes(kw) || label.includes(kw))) {
+        spanishIndex = i;
+        break;
+      }
+    }
+
+    const targetIndex = spanishIndex >= 0 ? spanishIndex : 0;
+    this.activateAudioTrack(video, targetIndex);
+    this.currentAudioTrack.set(targetIndex);
+  }
+
+  private activateAudioTrack(video: HTMLVideoElement, index: number): void {
+    const tracks = (video as any).audioTracks;
+    if (!tracks) return;
+    for (let i = 0; i < tracks.length; i++) {
+      (tracks[i] as any).enabled = i === index;
+    }
+  }
+
+  setAudioTrack(index: number): void {
+    const video = this.videoPlayer?.nativeElement;
+    if (!video) return;
+    this.activateAudioTrack(video, index);
+    this.currentAudioTrack.set(index);
+  }
+
+  getTrackLabel(track: any, index: number): string {
+    const lang = (track?.language || track?.lang || '').toLowerCase();
+    const label = track?.label || '';
+    if (label) return label;
+    if (lang) return lang.toUpperCase();
+    return `Audio ${index + 1}`;
+  }
+
+  // ── Playback controls ──────────────────────────────────────────────────────
+
+  togglePlayPause(): void {
+    const video = this.videoPlayer?.nativeElement;
+    if (!video) return;
+    if (video.paused) {
+      video.play();
+      this.isPaused.set(false);
+    } else {
+      video.pause();
+      this.isPaused.set(true);
+    }
+  }
+
+  seekTo(event: MouseEvent): void {
+    const video = this.videoPlayer?.nativeElement;
+    if (!video || !video.duration) return;
+    const bar = event.currentTarget as HTMLElement;
+    const rect = bar.getBoundingClientRect();
+    const pct = (event.clientX - rect.left) / rect.width;
+    video.currentTime = pct * video.duration;
+  }
+
+  private startUiUpdate(): void {
+    clearInterval(this.uiUpdateInterval);
+    this.uiUpdateInterval = setInterval(() => {
+      const video = this.videoPlayer?.nativeElement;
+      if (!video || !video.duration) return;
+      const pct = (video.currentTime / video.duration) * 100;
+      this.progressPercent.set(pct);
+      this.currentTimeFormatted.set(this.formatTime(video.currentTime));
+      this.durationFormatted.set(this.formatTime(video.duration));
+      this.isPaused.set(video.paused);
+    }, 500);
+  }
+
+  private formatTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  // ── Core video loading ─────────────────────────────────────────────────────
 
   private applyVideoFilters(
     intensity: number,
@@ -241,7 +381,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     const el = this.videoFilters?.nativeElement;
     if (!el) return;
     el.style.setProperty('--scanline-opacity', (intensity / 100).toString());
-    el.style.setProperty('--scanline-size', `${density * 2}px`); // *2 para suavizar
+    el.style.setProperty('--scanline-size', `${density * 2}px`);
     el.style.setProperty('--curvature', curvature ? '1' : '0');
     el.style.setProperty('--vignette', vignette ? '1' : '0');
   }
@@ -279,7 +419,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadChannelEpisode(state: ChannelState): void {
-    this.pendingNextEpisodePath = null; // limpiar pending
+    this.pendingNextEpisodePath = null;
     const video = this.videoPlayer?.nativeElement;
     if (!video) return;
     video.src = `${this.apiUrl}${state.filePath}`;
@@ -299,57 +439,46 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private connectToHub(channelId: number): void {
     this.hubConnection = new signalR.HubConnectionBuilder()
-        .withUrl(`${this.apiUrl}/hubs/channel`)
-        .withAutomaticReconnect()
-        .build();
+      .withUrl(`${this.apiUrl}/hubs/channel`)
+      .withAutomaticReconnect()
+      .build();
 
     this.hubConnection.on('ChannelState', (state: ChannelState) => {
-        const current = this.currentState();
-        const video = this.videoPlayer?.nativeElement;
-        if (!video) return;
+      const current = this.currentState();
+      const video = this.videoPlayer?.nativeElement;
+      if (!video) return;
 
-        if (current?.episodeId !== state.episodeId) {
-            // Episodio cambió en el servidor
-            const clientSecond = video.currentTime;
-            const remainingInCurrent = video.duration - clientSecond;
-
-            if (remainingInCurrent > 0 && remainingInCurrent <= this.BUFFER_SECONDS) {
-                // Cliente está casi terminando — encolar el siguiente
-                this.pendingNextEpisodePath = `${this.apiUrl}${state.filePath}`;
-                video.addEventListener('ended', () => this.playPendingNext(state), { once: true });
-            } else {
-                // Diferencia mayor al buffer — saltar directo al nuevo episodio
-                this.currentState.set(state);
-                this.loadChannelEpisode(state);
-            }
+      if (current?.episodeId !== state.episodeId) {
+        const remainingInCurrent = video.duration - video.currentTime;
+        if (remainingInCurrent > 0 && remainingInCurrent <= this.BUFFER_SECONDS) {
+          this.pendingNextEpisodePath = `${this.apiUrl}${state.filePath}`;
+          video.addEventListener('ended', () => this.playPendingNext(state), { once: true });
         } else {
-            // Mismo episodio — verificar sincronización
-            this.currentState.set(state);
-            this.syncVideoPosition(video, state.currentSecond);
+          this.currentState.set(state);
+          this.loadChannelEpisode(state);
         }
+      } else {
+        this.currentState.set(state);
+        this.syncVideoPosition(video, state.currentSecond);
+      }
     });
 
     this.hubConnection.start().then(() => {
-        this.hubConnection!.invoke('JoinChannel', channelId);
+      this.hubConnection!.invoke('JoinChannel', channelId);
     });
-}
+  }
 
-private syncVideoPosition(video: HTMLVideoElement, serverSecond: number): void {
+  private syncVideoPosition(video: HTMLVideoElement, serverSecond: number): void {
     if (!video.duration) return;
     const diff = Math.abs(video.currentTime - serverSecond);
+    if (diff > this.BUFFER_SECONDS) video.currentTime = serverSecond;
+  }
 
-    if (diff > this.BUFFER_SECONDS) {
-        // Demasiado desfasado — sincronizar
-        video.currentTime = serverSecond;
-    }
-    // Si diff <= BUFFER_SECONDS → no hacer nada, dejar al cliente seguir
-}
-
-private playPendingNext(state: ChannelState): void {
+  private playPendingNext(state: ChannelState): void {
     this.pendingNextEpisodePath = null;
     this.currentState.set(state);
     this.loadChannelEpisode(state);
-}
+  }
 
   enterSeriesMode(serie: SeriesResponse): void {
     this.stopProgressTracking();
@@ -379,7 +508,6 @@ private playPendingNext(state: ChannelState): void {
           });
           this.watchedMap.set(map);
 
-          // Buscar el episodio en progreso (no completado con currentSecond > 0)
           const inProgress = episodes.find(
             (e) => progress[e.id] && !progress[e.id].completed && progress[e.id].currentSecond > 0,
           );
@@ -418,6 +546,7 @@ private playPendingNext(state: ChannelState): void {
       video.src = '';
       video.load();
     }
+    clearInterval(this.uiUpdateInterval);
   }
 
   selectSeason(season: number): void {
@@ -432,11 +561,8 @@ private playPendingNext(state: ChannelState): void {
   playEpisode(episode: EpisodeResponse): void {
     if (!episode.filePath) return;
 
-    // Mark previous episode as completed
     const prev = this.currentEpisode();
-    if (prev && this.selectedSeries()) {
-      this.markEpisodeCompleted(prev);
-    }
+    if (prev && this.selectedSeries()) this.markEpisodeCompleted(prev);
 
     this.stopProgressTracking();
     this.showStatic.set(false);
@@ -447,13 +573,22 @@ private playPendingNext(state: ChannelState): void {
         const video = this.videoPlayer?.nativeElement;
         if (!video) return;
 
-        // Resume from saved progress
         const seriesId = this.selectedSeries()!.id;
         const savedSecond = this.watchedService.getLastProgress(seriesId, episode.id);
 
-        video.src = `${this.apiUrl}${episode.filePath!.replace('wwwroot', '').replace(/\\/g, '/')}`;
+        video.src = this.buildVideoSrc(episode.filePath!);
         video.load();
-        video.currentTime = savedSecond > 0 ? savedSecond : 0;
+
+        // Detectar pistas de audio después de que los metadatos estén listos
+        video.addEventListener(
+          'loadedmetadata',
+          () => {
+            this.initAudioTracks(video);
+            video.currentTime = savedSecond > 0 ? savedSecond : 0;
+          },
+          { once: true },
+        );
+
         video.muted = false;
         this.isMuted.set(false);
         video.play().catch(() => {
@@ -467,6 +602,7 @@ private playPendingNext(state: ChannelState): void {
         this.overlayTimeout = setTimeout(() => this.isEpisodeOverlay.set(false), 5000);
 
         this.startProgressTracking(episode);
+        this.startUiUpdate();
       }, 100);
     }, 0);
   }
@@ -482,17 +618,13 @@ private playPendingNext(state: ChannelState): void {
       if (!video || !video.duration) return;
 
       const pct = video.currentTime / video.duration;
-
-      // Guardar progreso siempre
       this.watchedService.markProgress(seriesId, episode.id, video.currentTime, pct >= 0.95);
 
-      // Marcar como visto una sola vez al llegar al 95%
       if (pct >= 0.95 && !markedAsWatched) {
         markedAsWatched = true;
         this.markEpisodeCompleted(episode);
       }
 
-      // Avanzar al siguiente solo cuando el video termina (pct >= 0.99 o ended)
       if (pct >= 0.99 || video.ended) {
         clearInterval(this.progressInterval);
         if (this.settings().randomPlayback) this.playRandomEpisode();
@@ -630,7 +762,7 @@ private playPendingNext(state: ChannelState): void {
   }
 
   onScreenHover(hovering: boolean): void {
-    if (this.isFullscreen()) return; // en fullscreen ignorar hover
+    if (this.isFullscreen()) return;
     if (this.currentState() || this.currentEpisode()) this.isHovering.set(hovering);
   }
 
@@ -643,11 +775,27 @@ private playPendingNext(state: ChannelState): void {
 
   volumeUp(): void {
     const v = this.videoPlayer?.nativeElement;
-    if (v) v.volume = Math.min(1, v.volume + 0.1);
+    if (v) {
+      v.volume = Math.min(1, v.volume + 0.1);
+      this.volumeLevel.set(v.volume);
+    }
   }
+
   volumeDown(): void {
     const v = this.videoPlayer?.nativeElement;
-    if (v) v.volume = Math.max(0, v.volume - 0.1);
+    if (v) {
+      v.volume = Math.max(0, v.volume - 0.1);
+      this.volumeLevel.set(v.volume);
+    }
+  }
+
+  setVolume(value: number): void {
+    const video = this.videoPlayer?.nativeElement;
+    if (!video) return;
+    video.volume = value;
+    video.muted = value === 0;
+    this.volumeLevel.set(value);
+    this.isMuted.set(value === 0);
   }
 
   goToLogin(): void {
@@ -725,5 +873,5 @@ private playPendingNext(state: ChannelState): void {
   isCurrentScheduleEntry(entry: ScheduleEntry): boolean {
     const now = new Date();
     return new Date(entry.startTime) <= now && new Date(entry.endTime) > now;
-}
+  }
 }

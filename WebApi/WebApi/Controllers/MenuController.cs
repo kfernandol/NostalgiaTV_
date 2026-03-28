@@ -22,5 +22,8 @@ namespace WebApi.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             return Ok(await _menuService.GetByUserAsync(userId));
         }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll() => Ok(await _menuService.GetAllAsync());
     }
 }

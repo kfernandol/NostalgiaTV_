@@ -1,12 +1,18 @@
 export interface ChannelRequest {
     name: string;
-    isRandom: boolean;
+    logo?: string;
+    history?: string;
+    startDate: string;
+    endDate?: string;
 }
 
 export interface ChannelResponse {
     id: number;
     name: string;
-    isRandom: boolean;
+    logoPath: string;
+    history?: string;
+    startDate: string;
+    endDate?: string;
     seriesIds: number[];
 }
 

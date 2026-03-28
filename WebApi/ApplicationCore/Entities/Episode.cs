@@ -8,8 +8,11 @@ namespace ApplicationCore.Entities
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-        public string FilePath { get; set; } = string.Empty;
-        public int Order { get; set; }
+        public string? FilePath { get; set; }
+        public int EpisodeTypeId { get; set; }
+        public EpisodeType EpisodeType { get; set; } = null!;
+        public int Season { get; set; }
+        public int EpisodeNumber { get; set; }
         public int SeriesId { get; set; }
         public Series Series { get; set; } = null!;
     }

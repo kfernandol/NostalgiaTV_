@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace WebApi.Controllers
 {
     [ApiController]
-    [Authorize]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/series")]
     public class SeriesController : ControllerBase
@@ -37,5 +36,11 @@ namespace WebApi.Controllers
             await _seriesService.DeleteAsync(id);
             return NoContent();
         }
+
+        [HttpPost("{id}/categories")]
+        public async Task<IActionResult> AssignCategories(int id, [FromBody] List<int> categoryIds) => Ok(await _seriesService.AssignCategoriesAsync(id, categoryIds));
+
+        [HttpPost("{id}/scan")]
+        public async Task<IActionResult> Scan(int id) => Ok(await _seriesService.ScanFolderAsync(id));
     }
 }

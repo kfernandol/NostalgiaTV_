@@ -22,6 +22,23 @@ namespace Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ApplicationCore.Entities.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("ApplicationCore.Entities.Channel", b =>
                 {
                     b.Property<int>("Id")
@@ -30,16 +47,54 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsRandom")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("History")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LogoPath")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.ToTable("Channels");
+                });
+
+            modelBuilder.Entity("ApplicationCore.Entities.ChannelScheduleEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChannelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EpisodeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChannelId");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.ToTable("ChannelScheduleEntries");
                 });
 
             modelBuilder.Entity("ApplicationCore.Entities.ChannelState", b =>
@@ -80,11 +135,16 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("EpisodeNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EpisodeTypeId")
+                        .HasColumnType("int");
+
                     b.Property<string>("FilePath")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Order")
+                    b.Property<int>("Season")
                         .HasColumnType("int");
 
                     b.Property<int>("SeriesId")
@@ -96,9 +156,55 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EpisodeTypeId");
+
                     b.HasIndex("SeriesId");
 
                     b.ToTable("Episodes");
+                });
+
+            modelBuilder.Entity("ApplicationCore.Entities.EpisodeType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EpisodeTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Regular"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Special"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Christmas Special"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Halloween Special"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Movie"
+                        });
                 });
 
             modelBuilder.Entity("ApplicationCore.Entities.Menu", b =>
@@ -143,23 +249,45 @@ namespace Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            Caption = "CONTENIDO",
-                            Icon = "movie",
-                            IsVisible = true,
-                            Name = "Contenido",
-                            SortOrder = 1,
-                            Url = ""
-                        },
-                        new
-                        {
                             Id = 2,
                             Caption = "SEGURIDAD",
                             Icon = "security",
                             IsVisible = true,
                             Name = "Seguridad",
+                            SortOrder = 1,
+                            Url = ""
+                        },
+                        new
+                        {
+                            Id = 1,
+                            Caption = "CONTENIDO",
+                            Icon = "movie",
+                            IsVisible = true,
+                            Name = "Contenido",
                             SortOrder = 2,
                             Url = ""
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Caption = "Roles",
+                            Icon = "admin_panel_settings",
+                            IsVisible = true,
+                            Name = "Roles",
+                            ParentId = 2,
+                            SortOrder = 1,
+                            Url = "/dashboard/roles"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Caption = "Usuarios",
+                            Icon = "people",
+                            IsVisible = true,
+                            Name = "Users",
+                            ParentId = 2,
+                            SortOrder = 2,
+                            Url = "/dashboard/users"
                         },
                         new
                         {
@@ -196,25 +324,14 @@ namespace Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = 6,
-                            Caption = "Roles",
-                            Icon = "admin_panel_settings",
+                            Id = 8,
+                            Caption = "Categorías",
+                            Icon = "category",
                             IsVisible = true,
-                            Name = "Roles",
-                            ParentId = 2,
-                            SortOrder = 1,
-                            Url = "/dashboard/roles"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Caption = "Usuarios",
-                            Icon = "people",
-                            IsVisible = true,
-                            Name = "Users",
-                            ParentId = 2,
-                            SortOrder = 2,
-                            Url = "/dashboard/users"
+                            Name = "Categories",
+                            ParentId = 1,
+                            SortOrder = 4,
+                            Url = "/dashboard/categories"
                         });
                 });
 
@@ -296,9 +413,30 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("FolderPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("History")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LogoPath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<float?>("Rating")
+                        .HasColumnType("real");
+
+                    b.Property<int>("Seasons")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
 
                     b.HasKey("Id");
 
@@ -338,6 +476,21 @@ namespace Infrastructure.Migrations
                             RolId = 1,
                             Username = "admin"
                         });
+                });
+
+            modelBuilder.Entity("CategorySeries", b =>
+                {
+                    b.Property<int>("CategoriesId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CategoriesId", "SeriesId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("SeriesCategories", (string)null);
                 });
 
             modelBuilder.Entity("ChannelSeries", b =>
@@ -404,7 +557,31 @@ namespace Infrastructure.Migrations
                         {
                             MenusId = 7,
                             RolesId = 1
+                        },
+                        new
+                        {
+                            MenusId = 8,
+                            RolesId = 1
                         });
+                });
+
+            modelBuilder.Entity("ApplicationCore.Entities.ChannelScheduleEntry", b =>
+                {
+                    b.HasOne("ApplicationCore.Entities.Channel", "Channel")
+                        .WithMany()
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationCore.Entities.Episode", "Episode")
+                        .WithMany()
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Channel");
+
+                    b.Navigation("Episode");
                 });
 
             modelBuilder.Entity("ApplicationCore.Entities.ChannelState", b =>
@@ -428,11 +605,19 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("ApplicationCore.Entities.Episode", b =>
                 {
+                    b.HasOne("ApplicationCore.Entities.EpisodeType", "EpisodeType")
+                        .WithMany()
+                        .HasForeignKey("EpisodeTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ApplicationCore.Entities.Series", "Series")
                         .WithMany("Episodes")
                         .HasForeignKey("SeriesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("EpisodeType");
 
                     b.Navigation("Series");
                 });
@@ -466,6 +651,21 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Rol");
+                });
+
+            modelBuilder.Entity("CategorySeries", b =>
+                {
+                    b.HasOne("ApplicationCore.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApplicationCore.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ChannelSeries", b =>

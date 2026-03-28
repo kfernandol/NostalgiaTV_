@@ -16,6 +16,7 @@ export const routes: Routes = [
         ]
     },
     { path: 'dashboard/login', component: SignInComponent },
+    { path: 'dashboard/logout', loadComponent: () => import('./features/dashboard/authentication/logout/logout.component').then(m => m.LogoutComponent) },
     {
       path: 'dashboard',
       component: DashboardLayoutComponent,
@@ -26,7 +27,8 @@ export const routes: Routes = [
           { path: 'episodes', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/episodes/episodes.component').then(m => m.EpisodesComponent) },
           { path: 'channels', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/channels/channels.component').then(m => m.ChannelsComponent) },
           { path: 'roles', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/roles/roles.component').then(m => m.RolesComponent) },
-          { path: 'users', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/users/users.component').then(m => m.UsersComponent) }
+          { path: 'users', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/users/users.component').then(m => m.UsersComponent) },
+          { path: 'categories', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/categories/categories.component').then(m => m.CategoriesComponent) },
       ]
     },
     { path: 'internal-error', component: InternalErrorComponent },

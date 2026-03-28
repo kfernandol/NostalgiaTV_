@@ -8,6 +8,8 @@ namespace ApplicationCore.Interfaces
     public interface IEpisodeService
     {
         Task<List<EpisodeResponse>> GetBySeriesAsync(int seriesId);
-        Task<EpisodeResponse> CreateAsync(EpisodeRequest request);
+        Task<EpisodeResponse> UpdateAsync(int id, UpdateEpisodeRequest request);
+        Task<IEnumerable<EpisodeTypeResponse>> GetTypesAsync();
+        Task<IEnumerable<EpisodeResponse>> GetBySeriesPublicAsync(int seriesId);
     }
 }

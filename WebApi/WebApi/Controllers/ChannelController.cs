@@ -20,7 +20,12 @@ namespace WebApi.Controllers
         public async Task<IActionResult> GetAll() => Ok(await _channelService.GetAllAsync());
 
         [HttpPost]
-        public async Task<IActionResult> Create(ChannelRequest request) => Ok(await _channelService.CreateAsync(request));
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm] ChannelRequest request) => Ok(await _channelService.CreateAsync(request));
+
+        [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(int id, [FromForm] ChannelRequest request) => Ok(await _channelService.UpdateAsync(id, request));
 
         [HttpPut("{id}/series")]
         public async Task<IActionResult> AssignSeries(int id, AssignSeriesRequest request) => Ok(await _channelService.AssignSeriesAsync(id, request));

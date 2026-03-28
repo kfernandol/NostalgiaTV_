@@ -21,20 +21,45 @@ namespace Infrastructure.Services
 
             return await _context.Episodes
                 .Where(e => e.SeriesId == seriesId)
-                .OrderBy(e => e.Order)
+                .Include(e => e.EpisodeType)
+                .OrderBy(e => e.Season)
                 .ProjectToType<EpisodeResponse>()
                 .ToListAsync();
         }
 
-        public async Task<EpisodeResponse> CreateAsync(EpisodeRequest request)
+        public async Task<EpisodeResponse> UpdateAsync(int id, UpdateEpisodeRequest request)
         {
-            var exists = await _context.Series.AnyAsync(s => s.Id == request.SeriesId);
-            if (!exists) throw new NotFoundException($"Series {request.SeriesId} not found");
+            var episode = await _context.Episodes.FindAsync(id)
+                ?? throw new NotFoundException("Episode not found");
 
-            var episode = request.Adapt<Episode>();
-            _context.Episodes.Add(episode);
+            if (!string.IsNullOrWhiteSpace(request.Title))
+                episode.Title = request.Title;
+
+            if (request.EpisodeNumber > 0)
+                episode.EpisodeNumber = request.EpisodeNumber;
+
+            if (request.EpisodeTypeId > 0)
+                episode.EpisodeTypeId = request.EpisodeTypeId;
+
             await _context.SaveChangesAsync();
             return episode.Adapt<EpisodeResponse>();
+        }
+
+        public async Task<IEnumerable<EpisodeTypeResponse>> GetTypesAsync()
+        {
+            return await _context.EpisodeTypes
+                .Select(e => new EpisodeTypeResponse { Id = e.Id, Name = e.Name })
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<EpisodeResponse>> GetBySeriesPublicAsync(int seriesId)
+        {
+            return await _context.Episodes
+                .Where(e => e.SeriesId == seriesId && e.FilePath != null)
+                .OrderBy(e => e.Season)
+                .ThenBy(e => e.EpisodeNumber)
+                .ProjectToType<EpisodeResponse>()
+                .ToListAsync();
         }
     }
 }

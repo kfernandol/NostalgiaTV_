@@ -53,12 +53,9 @@
                         }
                     </div>
                     <div class="info d-flex justify-content-between align-items-center">
-                        <mat-checkbox>
-                            Remember me
+                        <mat-checkbox formControlName="rememberMe">
+                          Remember me
                         </mat-checkbox>
-                        <a routerLink="/authentication/forgot-password" class="d-inline-block text-daxa">
-                            Forgot Password?
-                        </a>
                     </div>
                     <button mat-button class="btn" type="submit" [disabled]="authForm.invalid">
                         Sign In
@@ -66,27 +63,6 @@
                     @if (errorMessage) {
                         <div class="error text-danger text-center mt-2">{{ errorMessage }}</div>
                     }
-                    <div class="signin-with-socials text-center">
-                        <div class="or position-relative">
-                            <span class="d-inline-block">
-                                or sign in with
-                            </span>
-                        </div>
-                        <div class="socials">
-                            <button mat-button type="button" class="facebook">
-                                <i class="ri-facebook-fill"></i>
-                            </button>
-                            <button mat-button type="button" class="twitter">
-                                <i class="ri-twitter-x-fill"></i>
-                            </button>
-                            <button mat-button type="button" class="google">
-                                <i class="ri-google-fill"></i>
-                            </button>
-                            <button mat-button type="button" class="linkedin">
-                                <i class="ri-linkedin-fill"></i>
-                            </button>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>

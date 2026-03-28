@@ -9,6 +9,14 @@ export const authGuard: CanActivateFn = () => {
 
     if (authService.isAuthenticated()) return true;
 
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    const sessionActive = sessionStorage.getItem('sessionActive') === 'true';
+
+    if (!rememberMe && !sessionActive) {
+        router.navigate(['/dashboard/login']);
+        return false;
+    }
+
     return authService.checkSession().pipe(
         map(() => true),
         catchError(() => {

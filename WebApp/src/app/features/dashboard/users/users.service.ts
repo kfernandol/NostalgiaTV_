@@ -17,6 +17,10 @@ export class UsersService {
         return this.http.post<UserResponse>(this.apiUrl, request, { withCredentials: true });
     }
 
+    update(id: number, request: UserRequest) {
+        return this.http.put<UserResponse>(`${this.apiUrl}/${id}`, request, { withCredentials: true });
+    }
+
     delete(id: number) {
         return this.http.delete(`${this.apiUrl}/${id}`, { withCredentials: true });
     }

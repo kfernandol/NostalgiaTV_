@@ -9,6 +9,7 @@ namespace ApplicationCore.Interfaces
     {
         Task<List<ChannelResponse>> GetAllAsync();
         Task<ChannelResponse> CreateAsync(ChannelRequest request);
+        Task<ChannelResponse> UpdateAsync(int id, ChannelRequest request);
         Task<ChannelResponse> AssignSeriesAsync(int channelId, AssignSeriesRequest request);
     }
 }

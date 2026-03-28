@@ -13,12 +13,68 @@
         <video
           #videoPlayer
           class="video-player"
+          [class.video-player--cover]="!isFullscreen()"
+          [class.video-player--contain]="isFullscreen()"
           [muted]="isMuted()"
           playsinline
           autoplay
           disablePictureInPicture
           controlslist="nodownload nofullscreen noremoteplayback"
         ></video>
+
+        <!-- Retro controls bar — solo en modo series -->
+        @if (mode() === 'series' && currentEpisode()) {
+          <div class="retro-controls" [class.visible]="showOverlay()">
+            <!-- Play / Pause -->
+            <button class="rc-btn" (click)="togglePlayPause()">
+              <mat-icon>{{ isPaused() ? 'play_arrow' : 'pause' }}</mat-icon>
+            </button>
+
+            <!-- Volume -->
+            <div class="rc-volume-wrap">
+              <button class="rc-btn" (click)="toggleMute()">
+                <mat-icon>{{ isMuted() || volumeLevel() === 0 ? 'volume_off' : volumeLevel() < 0.5 ? 'volume_down' : 'volume_up' }}</mat-icon>
+              </button>
+              <div class="rc-volume-slider">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  [value]="isMuted() ? 0 : volumeLevel()"
+                  (input)="setVolume(+$any($event.target).value)"
+                />
+              </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="rc-progress" (click)="seekTo($event)">
+              <div class="rc-track">
+                <div class="rc-fill" [style.width.%]="progressPercent()"></div>
+                <div class="rc-thumb" [style.left.%]="progressPercent()"></div>
+              </div>
+            </div>
+
+            <!-- Time -->
+            <span class="rc-time">{{ currentTimeFormatted() }} / {{ durationFormatted() }}</span>
+
+            <!-- Audio track selector -->
+            @if (audioTracks().length > 0) {
+              <select class="rc-select" (change)="setAudioTrack(+$any($event.target).value)">
+                @for (track of audioTracks(); track track; let i = $index) {
+                  <option [value]="i" [selected]="currentAudioTrack() === i">
+                    {{ getTrackLabel(track, i) }}
+                  </option>
+                }
+              </select>
+            }
+
+            <!-- Fullscreen -->
+            <button class="rc-btn" (click)="toggleFullscreen()">
+              <mat-icon>{{ isFullscreen() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+            </button>
+          </div>
+        }
 
         <div
           class="video-filters"
@@ -36,16 +92,6 @@
         >
           <mat-icon>tune</mat-icon>
         </button>
-
-        @if (isFullscreen()) {
-          <button
-            class="overlay-fullscreen-exit-btn"
-            [class.visible]="showOverlay()"
-            (click)="toggleFullscreen()"
-          >
-            <mat-icon>fullscreen_exit</mat-icon>
-          </button>
-        }
 
         @if (showFiltersPanel()) {
           <div
@@ -141,6 +187,7 @@
           class="series-overlay"
           [class.visible]="showOverlay()"
           [class.series-overlay--fs]="isFullscreen()"
+          [class.series-overlay--with-controls]="mode() === 'series' && currentEpisode()"
         >
           <div class="overlay-info">
             @if (mode() === 'channels') {
@@ -222,10 +269,21 @@
       </div>
       <div class="nav-controls">
         <button mat-stroked-button class="nav-btn" (click)="openSeriesDialog()">SERIES</button>
-        <button mat-stroked-button class="nav-btn nav-btn--secondary"
-            [disabled]="!currentChannel()"
-            (click)="openScheduleDialog()">PROGRAMACIÓN</button>
-        <button mat-stroked-button class="nav-btn nav-btn--secondary" (click)="toggleFiltersPanel()">FILTROS</button>
+        <button
+          mat-stroked-button
+          class="nav-btn nav-btn--secondary"
+          [disabled]="!currentChannel()"
+          (click)="openScheduleDialog()"
+        >
+          PROGRAMACIÓN
+        </button>
+        <button
+          mat-stroked-button
+          class="nav-btn nav-btn--secondary"
+          (click)="toggleFiltersPanel()"
+        >
+          FILTROS
+        </button>
       </div>
     </div>
   </div>
@@ -485,43 +543,49 @@
 }
 <!-- Schedule Dialog -->
 @if (showScheduleDialog()) {
-    <div class="dialog-backdrop" (click)="closeScheduleDialog()">
-        <div class="dialog-panel dialog-panel--schedule" (click)="$event.stopPropagation()">
-            <div class="dialog-header">
-                <span class="dialog-title">PROGRAMACIÓN</span>
-                <button mat-icon-button (click)="closeScheduleDialog()">
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
+  <div class="dialog-backdrop" (click)="closeScheduleDialog()">
+    <div class="dialog-panel dialog-panel--schedule" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <span class="dialog-title">PROGRAMACIÓN</span>
+        <button mat-icon-button (click)="closeScheduleDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
 
-            @if (scheduleLoading()) {
-                <div class="dialog-empty">Cargando...</div>
-            } @else {
-                <div class="dialog-list">
-                    @for (entry of scheduleEntries(); track entry.id) {
-                        <div class="schedule-item" [class.schedule-item--current]="isCurrentScheduleEntry(entry)">
-                          <div class="schedule-time">
-                              <span class="schedule-start">{{ entry.startTime | date:'HH:mm' }}</span>
-                              <span class="schedule-end">{{ entry.endTime | date:'HH:mm' }}</span>
-                          </div>
-                          <div class="schedule-info">
-                              <span class="schedule-series">{{ entry.seriesName }}</span>
-                              <span class="schedule-episode">{{ entry.episodeTitle }}</span>
-                              <span class="schedule-meta">
-                                  @if (entry.season > 0) { T{{ entry.season }} }
-                                  @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
-                              </span>
-                          </div>
-                          @if (entry.seriesLogoPath) {
-                              <img [src]="apiUrl + entry.seriesLogoPath" class="schedule-logo" />
-                          }
-                      </div>
-                    }
-                    @empty {
-                        <div class="dialog-empty">Sin programación disponible</div>
-                    }
-                </div>
-            }
+      @if (scheduleLoading()) {
+        <div class="dialog-empty">Cargando...</div>
+      } @else {
+        <div class="dialog-list">
+          @for (entry of scheduleEntries(); track entry.id) {
+            <div
+              class="schedule-item"
+              [class.schedule-item--current]="isCurrentScheduleEntry(entry)"
+            >
+              <div class="schedule-time">
+                <span class="schedule-start">{{ entry.startTime | date: 'HH:mm' }}</span>
+                <span class="schedule-end">{{ entry.endTime | date: 'HH:mm' }}</span>
+              </div>
+              <div class="schedule-info">
+                <span class="schedule-series">{{ entry.seriesName }}</span>
+                <span class="schedule-episode">{{ entry.episodeTitle }}</span>
+                <span class="schedule-meta">
+                  @if (entry.season > 0) {
+                    T{{ entry.season }}
+                  }
+                  @if (entry.episodeNumber > 0) {
+                    · EP{{ entry.episodeNumber }}
+                  }
+                </span>
+              </div>
+              @if (entry.seriesLogoPath) {
+                <img [src]="apiUrl + entry.seriesLogoPath" class="schedule-logo" />
+              }
+            </div>
+          } @empty {
+            <div class="dialog-empty">Sin programación disponible</div>
+          }
         </div>
+      }
     </div>
+  </div>
 }

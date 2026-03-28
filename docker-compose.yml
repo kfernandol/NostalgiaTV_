@@ -28,10 +28,24 @@ services:
     container_name: nostalgia-api
     restart: unless-stopped
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=NostalgiaTV;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
-      FFmpeg__BinaryFolder: /usr/bin
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+
+      # 1. Base de datos (usando el nombre del servicio 'sqlserver')
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=NostalgiaTV;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True
+
+      # 2. CORS (Añadimos la IP pública y el puerto de tu WebApp)
+      - Cors__AllowedOrigins__0=http://85.239.230.160:8082
+      - Cors__AllowedOrigins__1=http://localhost:8082
+
+      # 3. JWT (Opcional: puedes cambiarlos aquí si quieres otros valores en producción)
+      - Jwt__Key=${JWT_SECRET_KEY}
+      - Jwt__Issuer=http://85.239.230.160:8081
+      - Jwt__Audience=http://85.239.230.160:8081
+
+      # 4. Rutas de Linux para FFmpeg y Archivos
+      - FFmpeg__BinaryFolder=/usr/bin
+      - MediaSettings__BasePath=/app/wwwroot/uploads
     ports:
       - "8080:8080"
     volumes:

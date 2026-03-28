@@ -17,19 +17,13 @@ export class ChannelsService {
     return this.http.get<ChannelResponse[]>(this.apiUrl, { withCredentials: true });
   }
 
-  create(request: ChannelRequest | FormData) {
-    const isFormData = request instanceof FormData;
-    return this.http.post<ChannelResponse>(this.apiUrl, request, {
-      withCredentials: true,
-      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
-    });
+  create(request: FormData) {
+    return this.http.post<ChannelResponse>(this.apiUrl, request, { withCredentials: true });
   }
 
-  update(id: number, request: ChannelRequest | FormData) {
-    const isFormData = request instanceof FormData;
+  update(id: number, request: FormData) {
     return this.http.put<ChannelResponse>(`${this.apiUrl}/${id}`, request, {
       withCredentials: true,
-      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
     });
   }
 

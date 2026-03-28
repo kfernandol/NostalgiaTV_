@@ -106,7 +106,6 @@ namespace Infrastructure.Services
                 .Where(e => e.SeriesId == seriesId)
                 .ToListAsync();
 
-            // Build map of existing episodes by normalized FilePath
             var existingByPath = existingEpisodes
                 .Where(e => e.FilePath != null)
                 .ToDictionary(e => NormalizePath(e.FilePath!), e => e);
@@ -114,7 +113,6 @@ namespace Infrastructure.Services
             var scannedFiles = new List<(string FilePath, int Season, int EpisodeTypeId)>();
             var allDirs = Directory.GetDirectories(series.FolderPath);
 
-            // Season folders
             foreach (var seasonDir in allDirs.Where(d =>
                 Path.GetFileName(d).StartsWith("season ", StringComparison.OrdinalIgnoreCase)))
             {
@@ -126,7 +124,6 @@ namespace Infrastructure.Services
                     scannedFiles.Add((file, seasonNumber, regularType.Id));
             }
 
-            // Specials folder
             var specialsDir = allDirs.FirstOrDefault(d =>
                 Path.GetFileName(d).Equals("specials", StringComparison.OrdinalIgnoreCase))
                 ?? Path.Combine(series.FolderPath, "specials");
@@ -135,7 +132,6 @@ namespace Infrastructure.Services
                 foreach (var file in Directory.GetFiles(specialsDir))
                     scannedFiles.Add((file, 0, specialType.Id));
 
-            // Movies folder
             var moviesDir = allDirs.FirstOrDefault(d =>
                 Path.GetFileName(d).Equals("movies", StringComparison.OrdinalIgnoreCase))
                 ?? Path.Combine(series.FolderPath, "movies");
@@ -146,21 +142,18 @@ namespace Infrastructure.Services
 
             var scannedPaths = scannedFiles.Select(f => NormalizePath(f.FilePath)).ToHashSet();
 
-            // Remove episodes whose file no longer exists
             var toRemove = existingEpisodes.Where(e =>
                 e.FilePath == null || !scannedPaths.Contains(NormalizePath(e.FilePath))).ToList();
             _context.Episodes.RemoveRange(toRemove);
 
-            // Add or update
             foreach (var (filePath, season, episodeTypeId) in scannedFiles)
             {
                 var key = NormalizePath(filePath);
                 var fileTitle = Path.GetFileNameWithoutExtension(filePath);
+                var relativePath = ToRelativePath(filePath);
 
                 if (existingByPath.TryGetValue(key, out var existing))
                 {
-                    // File already exists — only update FilePath if it changed (shouldn't happen but just in case)
-                    // Never overwrite Title or EpisodeNumber if they were manually edited
                     var titleMatchesFile = existing.Title == fileTitle;
                     var wasManuallyEdited = !titleMatchesFile || existing.EpisodeNumber > 0;
 
@@ -171,19 +164,18 @@ namespace Infrastructure.Services
                         if (parsedNumber > 0) existing.EpisodeNumber = parsedNumber;
                     }
 
-                    existing.FilePath = filePath;
+                    existing.FilePath = relativePath;
                     existing.Season = season;
                     existing.EpisodeTypeId = episodeTypeId;
                 }
                 else
                 {
-                    // New file — create with parsed title and episode number
                     var (parsedTitle, parsedNumber) = ParseFileName(fileTitle);
 
                     _context.Episodes.Add(new Episode
                     {
                         Title = parsedTitle,
-                        FilePath = filePath,
+                        FilePath = relativePath,
                         SeriesId = seriesId,
                         Season = season,
                         EpisodeNumber = parsedNumber,
@@ -201,12 +193,23 @@ namespace Infrastructure.Services
                 .ToListAsync();
         }
 
-        private static string NormalizePath(string path) => path.Replace("\\", "/").ToLowerInvariant().Trim();
+        // Convierte ruta absoluta a relativa desde wwwroot
+        private static string ToRelativePath(string absolutePath)
+        {
+            var normalized = absolutePath.Replace("\\", "/");
+            var wwwrootIndex = normalized.IndexOf("wwwroot", StringComparison.OrdinalIgnoreCase);
+            return wwwrootIndex >= 0
+                ? normalized[wwwrootIndex..]
+                : normalized;
+        }
+
+        private static string NormalizePath(string path) =>
+            path.Replace("\\", "/").ToLowerInvariant().Trim();
 
         private static (string Title, int EpisodeNumber) ParseFileName(string fileName)
         {
-            // Patrones: "01 Nombre", "01. Nombre", "01 - Nombre", "S01E01 Nombre", "E01 Nombre"
-            var match = System.Text.RegularExpressions.Regex.Match(fileName, @"^(?:[Ss]\d+)?[Ee]?(\d{1,3})[\s\.\-_]+(.+)$");
+            var match = System.Text.RegularExpressions.Regex.Match(
+                fileName, @"^(?:[Ss]\d+)?[Ee]?(\d{1,3})[\s\.\-_]+(.+)$");
             if (match.Success && int.TryParse(match.Groups[1].Value, out var num))
                 return (match.Groups[2].Value.Trim().Replace("_", " "), num);
 

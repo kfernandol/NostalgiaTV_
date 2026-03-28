@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 WebApi/WebApi/wwwroot/uploads/
+
+.env

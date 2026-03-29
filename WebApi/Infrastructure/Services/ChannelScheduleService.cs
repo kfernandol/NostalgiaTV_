@@ -42,8 +42,8 @@ namespace Infrastructure.Services
                     SeriesName = e.Episode.Series.Name,
                     SeriesLogoPath = e.Episode.Series.LogoPath,
                     FilePath = e.Episode.FilePath!.Replace("wwwroot", "").Replace("\\", "/"),
-                    StartTime = e.StartTime,
-                    EndTime = e.EndTime,
+                    StartTime = DateTime.SpecifyKind(e.StartTime, DateTimeKind.Utc),
+                    EndTime = DateTime.SpecifyKind(e.EndTime, DateTimeKind.Utc),
                     Season = e.Episode.Season,
                     EpisodeNumber = e.Episode.EpisodeNumber,
                 })

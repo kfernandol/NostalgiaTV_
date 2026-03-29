@@ -29,11 +29,11 @@ const DEFAULT_FILTER: VideoFilterProfile = {
 };
 
 const DEFAULT_FILTER_FULLSCREEN: VideoFilterProfile = {
-    scanlineIntensity: 60,
+    scanlineIntensity: 25,
     scanlineDensity: 2,
     crtCurvature: true,
     vignette: true,
-    scanlineAnimation: true,
+    scanlineAnimation: false,
 };
 
 const STORAGE_KEY = 'nostalgia_tv_settings';

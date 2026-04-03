@@ -36,6 +36,8 @@ namespace Infrastructure
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IEpisodeService, EpisodeService>();
             services.AddScoped<IChannelService, ChannelService>();
+            services.AddScoped<IChannelEraService, ChannelEraService>();
+            services.AddScoped<IChannelBumperService, ChannelBumperService>();
             services.AddScoped<IRolService, RolService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IMenuService, MenuService>();

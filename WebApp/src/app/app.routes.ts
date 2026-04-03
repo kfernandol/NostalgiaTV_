@@ -29,6 +29,8 @@ export const routes: Routes = [
           { path: 'roles', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/roles/roles.component').then(m => m.RolesComponent) },
           { path: 'users', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/users/users.component').then(m => m.UsersComponent) },
           { path: 'categories', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/categories/categories.component').then(m => m.CategoriesComponent) },
+          { path: 'channel-eras', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/channel-eras/channel-eras.component').then(m => m.ChannelErasComponent) },
+          { path: 'channel-bumpers', canActivate: [menuGuard], loadComponent: () => import('./features/dashboard/channel-bumpers/channel-bumpers.component').then(m => m.ChannelBumpersComponent) },
       ]
     },
     { path: 'internal-error', component: InternalErrorComponent },

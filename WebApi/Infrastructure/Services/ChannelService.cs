@@ -1,4 +1,6 @@
-﻿using ApplicationCore.DTOs.Channel;
+using ApplicationCore.DTOs.Channel;
+using ApplicationCore.DTOs.ChannelBumper;
+using ApplicationCore.DTOs.ChannelEra;
 using ApplicationCore.Entities;
 using ApplicationCore.Exceptions;
 using ApplicationCore.Interfaces;
@@ -23,8 +25,43 @@ namespace Infrastructure.Services
             _broadcastService = broadcastService;
         }
 
-        public async Task<List<ChannelResponse>> GetAllAsync() => await _context.Channels.Include(c => c.Series)
-        .ProjectToType<ChannelResponse>().ToListAsync();
+        public async Task<List<ChannelResponse>> GetAllAsync()
+        {
+            var channels = await _context.Channels
+                .Include(c => c.Series)
+                .Include(c => c.Eras).ThenInclude(e => e.Series)
+                .Include(c => c.Eras).ThenInclude(e => e.Bumpers)
+                .ToListAsync();
+
+            var responses = new List<ChannelResponse>();
+            foreach (var channel in channels)
+            {
+                var response = channel.Adapt<ChannelResponse>();
+                response.Eras = channel.Eras.Select(e => new ChannelEraResponse
+                {
+                    Id = e.Id,
+                    ChannelId = e.ChannelId,
+                    ChannelName = channel.Name,
+                    Name = e.Name,
+                    Description = e.Description,
+                    StartDate = e.StartDate,
+                    EndDate = e.EndDate,
+                    FolderPath = e.FolderPath,
+                    SeriesIds = e.Series.Select(s => s.Id).ToList(),
+                    Bumpers = e.Bumpers.Select(b => new ChannelBumperResponse
+                    {
+                        Id = b.Id,
+                        ChannelEraId = b.ChannelEraId,
+                        Title = b.Title,
+                        FilePath = b.FilePath,
+                        Order = b.Order
+                    }).ToList()
+                }).ToList();
+                responses.Add(response);
+            }
+
+            return responses;
+        }
 
         public async Task<ChannelResponse> CreateAsync(ChannelRequest request)
         {

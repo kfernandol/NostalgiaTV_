@@ -6,6 +6,27 @@ export interface ChannelRequest {
     endDate?: string;
 }
 
+export interface ChannelBumperDto {
+    id: number;
+    channelEraId: number;
+    title: string;
+    filePath?: string;
+    order: number;
+}
+
+export interface ChannelEraDto {
+    id: number;
+    channelId: number;
+    channelName: string;
+    name: string;
+    description?: string;
+    startDate: string;
+    endDate?: string;
+    folderPath?: string;
+    seriesIds: number[];
+    bumpers: ChannelBumperDto[];
+}
+
 export interface ChannelResponse {
     id: number;
     name: string;
@@ -14,6 +35,7 @@ export interface ChannelResponse {
     startDate: string;
     endDate?: string;
     seriesIds: number[];
+    eras: ChannelEraDto[];
 }
 
 export interface AssignSeriesRequest {

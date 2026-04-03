@@ -1,17 +1,12 @@
-import { Component, input, output, viewChild, signal, effect, ElementRef } from '@angular/core';
+import { Component, input, output, viewChild, signal, effect, computed, ElementRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TvSettings } from '../../../../core/services/tv-settings.service';
 import { SeriesResponse } from '../../../models/serie.model';
+import { ScheduleEntry } from '../../../models/channel-era.model';
 
 interface Channel { id: number; name: string; logoPath?: string; }
-interface ScheduleEntry {
-  id: number; channelId: number; episodeId: number;
-  episodeTitle: string; seriesName: string; seriesLogoPath?: string;
-  filePath: string; startTime: string; endTime: string;
-  season: number; episodeNumber: number;
-}
 
 @Component({
   selector: 'app-retro-tv-dialogs',
@@ -40,6 +35,13 @@ export class RetroTvDialogsComponent {
   scheduleEntries = input<ScheduleEntry[]>([]);
   scheduleLoading = input<boolean>(false);
   scheduleChannelId = input<number | null>(null);
+  showBumpers = input<boolean>(false);
+
+  filteredScheduleEntries = computed(() => {
+    const entries = this.scheduleEntries();
+    if (this.showBumpers()) return entries;
+    return entries.filter(e => e.episodeId != null && e.episodeId > 0);
+  });
 
   // View refs
   scheduleListRef = viewChild<ElementRef<HTMLDivElement>>('scheduleList');
@@ -50,7 +52,7 @@ export class RetroTvDialogsComponent {
 
   constructor() {
     effect(() => {
-      const entries = this.scheduleEntries();
+      const entries = this.filteredScheduleEntries();
       const now = new Date();
       let index = -1;
       let pos = 0;

@@ -143,19 +143,24 @@
             <div class="dialog-empty">Cargando...</div>
           } @else {
             <div class="dialog-list schedule-list" #scheduleList>
-              @for (entry of scheduleEntries(); track entry.id) {
-                <div class="schedule-item" [class.schedule-item--current]="isCurrentEntry(entry)" [attr.data-entry-id]="entry.id">
+              @for (entry of filteredScheduleEntries(); track entry.id) {
+                <div class="schedule-item" [class.schedule-item--current]="isCurrentEntry(entry)" [class.schedule-item--bumper]="entry.bumperId" [attr.data-entry-id]="entry.id">
                   <div class="schedule-time">
                     <span class="schedule-start">{{ toLocalTime(entry.startTime) | date:'HH:mm' }}</span>
                     <span class="schedule-end">{{ toLocalTime(entry.endTime) | date:'HH:mm' }}</span>
                   </div>
                   <div class="schedule-info">
-                    <span class="schedule-series">{{ entry.seriesName }}</span>
-                    <span class="schedule-episode">{{ entry.episodeTitle }}</span>
-                    <span class="schedule-meta">
-                      @if (entry.season > 0) { T{{ entry.season }} }
-                      @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
-                    </span>
+                    @if (entry.bumperId) {
+                      <span class="schedule-series schedule-series--bumper">BUMPER</span>
+                      <span class="schedule-episode schedule-episode--bumper">Intermisión</span>
+                    } @else {
+                      <span class="schedule-series">{{ entry.seriesName }}</span>
+                      <span class="schedule-episode">{{ entry.episodeTitle }}</span>
+                      <span class="schedule-meta">
+                        @if (entry.season > 0) { T{{ entry.season }} }
+                        @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
+                      </span>
+                    }
                   </div>
                   @if (entry.seriesLogoPath) {
                     <img [src]="apiUrl() + entry.seriesLogoPath" class="schedule-logo" />

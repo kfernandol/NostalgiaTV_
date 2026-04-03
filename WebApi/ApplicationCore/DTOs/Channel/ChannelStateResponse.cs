@@ -16,5 +16,7 @@ namespace ApplicationCore.DTOs.Channel
         public int NextEpisodeId { get; set; }
         public string? NextEpisodeTitle { get; set; }
         public double SecondsUntilNext { get; set; }
+        public bool IsBumper { get; set; }
+        public string? BumperTitle { get; set; }
     }
 }

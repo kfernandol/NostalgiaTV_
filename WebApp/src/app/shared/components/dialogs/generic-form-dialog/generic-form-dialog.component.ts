@@ -61,7 +61,8 @@ export class GenericFormDialogComponent {
     const controls: Record<string, any> = {};
 
     config.fields.forEach((field) => {
-      controls[field.key] = [config.data?.[field.key] ?? '', field.validators ?? []];
+      const initialValue = config.data?.[field.key] ?? (field.type === 'multiselect' ? [] : '');
+      controls[field.key] = [initialValue, field.validators ?? []];
       console.log(field.key, 'validators:', field.validators);
 
       // Load existing preview for file fields on edit

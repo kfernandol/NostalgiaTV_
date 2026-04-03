@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using ApplicationCore.DTOs.ChannelEra;
 
 namespace ApplicationCore.DTOs.Channel
 {
@@ -13,5 +14,6 @@ namespace ApplicationCore.DTOs.Channel
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public List<int> SeriesIds { get; set; } = [];
+        public List<ChannelEraResponse> Eras { get; set; } = [];
     }
 }

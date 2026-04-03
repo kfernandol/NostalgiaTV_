@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface Channel { id: number; name: string; logoPath?: string; }
+interface ChannelEra { id: number; name: string; description?: string; seriesIds: number[]; }
 
 
 @Component({
@@ -17,11 +18,14 @@ interface Channel { id: number; name: string; logoPath?: string; }
 export class RetroTvRemoteChannelsComponent {
   channels = input<Channel[]>([]);
   currentChannelId = input<number | null>(null);
+  channelEras = input<ChannelEra[]>([]);
+  selectedEraId = input<number | null>(null);
   isMuted = input<boolean>(false);
   hasChannel = input<boolean>(false);
   apiUrl = input<string>('');
 
   selectChannel = output<Channel>();
+  selectEra = output<ChannelEra>();
   toggleMute = output<void>();
   volumeDown = output<void>();
   volumeUp = output<void>();

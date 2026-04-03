@@ -58,5 +58,13 @@ namespace WebApi.Controllers
 
         [HttpGet("channels/{channelId}/schedule")]
         public async Task<IActionResult> GetSchedule(int channelId) => Ok(await _scheduleService.GetScheduleAsync(channelId));
+
+        [HttpGet("channels/{channelId}/eras")]
+        public async Task<IActionResult> GetChannelEras(int channelId, [FromServices] IChannelEraService eraService) =>
+            Ok(await eraService.GetByChannelAsync(channelId));
+
+        [HttpGet("eras/{eraId}/bumpers")]
+        public async Task<IActionResult> GetEraBumpers(int eraId, [FromServices] IChannelBumperService bumperService) =>
+            Ok(await bumperService.GetByEraAsync(eraId));
     }
 }

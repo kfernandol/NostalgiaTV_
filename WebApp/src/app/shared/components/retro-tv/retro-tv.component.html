@@ -17,7 +17,9 @@
           [attr.autoplay]="isIOSDevice ? null : ''"
           disablePictureInPicture
           controlslist="nodownload nofullscreen noremoteplayback"
-        ></video>
+        >
+          <source>
+        </video>
 
         @if (isIOSDevice && iosNeedsPlay()) {
           <button class="ios-play-btn" (click)="iosStartPlay()" aria-label="Reproducir">

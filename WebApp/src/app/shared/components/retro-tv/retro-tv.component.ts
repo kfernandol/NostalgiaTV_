@@ -199,33 +199,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.ngZone.runOutsideAngular(() => {
       document.addEventListener('mousemove', this.fsMouseMoveHandler);
       document.addEventListener('fullscreenchange', this.fullscreenHandler);
-
-      const overlay = this.screenOverlay.nativeElement;
-      overlay.addEventListener('mouseenter', () => {
-        if (this.isFullscreen()) return;
-        if (!this.isHovering() && (this.currentState() || this.currentEpisode())) {
-          this.ngZone.run(() => this.isHovering.set(true));
-        }
-      });
-      overlay.addEventListener('mouseleave', () => {
-        if (this.isFullscreen()) return;
-        if (this.isHovering()) {
-          this.ngZone.run(() => this.isHovering.set(false));
-        }
-      });
-      overlay.addEventListener('click', () => {
-        if (this.isFullscreen()) return;
-        if (!(this.currentState() || this.currentEpisode())) return;
-        this.ngZone.run(() => {
-          clearTimeout(this.overlayTimeout);
-          if (this.isHovering()) {
-            this.isHovering.set(false);
-          } else {
-            this.isHovering.set(true);
-            this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 3000);
-          }
-        });
-      });
     });
 
     this.route.queryParams.subscribe(params => {
@@ -817,6 +790,34 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
       next: data => { this.scheduleEntries.set(data); this.scheduleLoading.set(false); },
       error: () => this.scheduleLoading.set(false),
     });
+  }
+
+  // ── Screen overlay mouse handlers ─────────────────────────────────────────
+
+  onScreenMouseEnter(): void {
+    if (this.isFullscreen()) return;
+    if (!this.isHovering() && (this.currentState() || this.currentEpisode())) {
+      this.isHovering.set(true);
+    }
+  }
+
+  onScreenMouseLeave(): void {
+    if (this.isFullscreen()) return;
+    if (this.isHovering()) {
+      this.isHovering.set(false);
+    }
+  }
+
+  onScreenClick(): void {
+    if (this.isFullscreen()) return;
+    if (!(this.currentState() || this.currentEpisode())) return;
+    clearTimeout(this.overlayTimeout);
+    if (this.isHovering()) {
+      this.isHovering.set(false);
+    } else {
+      this.isHovering.set(true);
+      this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 3000);
+    }
   }
 
   // ── UI ────────────────────────────────────────────────────────────────────

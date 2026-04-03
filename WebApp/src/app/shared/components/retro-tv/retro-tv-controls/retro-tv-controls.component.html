@@ -24,21 +24,23 @@
       </div>
     </div>
 
-    <div class="rc-progress" (click)="seek.emit($event)"
-      role="slider"
-      [attr.aria-valuenow]="progressPercent()"
-      aria-valuemin="0" aria-valuemax="100"
-      [tabindex]="isFullscreen() ? 1 : -1"
-      (keydown)="progressKeydown.emit($event)"
-      aria-label="Progreso del video"
-    >
-      <div class="rc-track">
-        <div class="rc-fill" [style.width.%]="progressPercent()"></div>
-        <div class="rc-thumb" [style.left.%]="progressPercent()"></div>
+    @if (showProgress()) {
+      <div class="rc-progress" (click)="seek.emit($event)"
+        role="slider"
+        [attr.aria-valuenow]="progressPercent()"
+        aria-valuemin="0" aria-valuemax="100"
+        [tabindex]="isFullscreen() ? 1 : -1"
+        (keydown)="progressKeydown.emit($event)"
+        aria-label="Progreso del video"
+      >
+        <div class="rc-track">
+          <div class="rc-fill" [style.width.%]="progressPercent()"></div>
+          <div class="rc-thumb" [style.left.%]="progressPercent()"></div>
+        </div>
       </div>
-    </div>
 
-    <span class="rc-time">{{ currentTimeFormatted() }} / {{ durationFormatted() }}</span>
+      <span class="rc-time">{{ currentTimeFormatted() }} / {{ durationFormatted() }}</span>
+    }
 
     @if (audioTracks().length > 1) {
       <select class="rc-select"

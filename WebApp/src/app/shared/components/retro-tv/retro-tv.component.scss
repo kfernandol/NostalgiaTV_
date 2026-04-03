@@ -55,6 +55,7 @@
   align-items: center;
   justify-content: center;
   touch-action: manipulation;
+  pointer-events: auto;
 }
 
 .video-player {

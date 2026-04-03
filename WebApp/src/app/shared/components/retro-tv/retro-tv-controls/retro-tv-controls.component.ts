@@ -20,6 +20,7 @@ export class RetroTvControlsComponent {
   audioTracks = input<any[]>([]);
   currentAudioTrack = input<number>(0);
   isFullscreen = input<boolean>(false);
+  showProgress = input<boolean>(true);
 
   playPause = output<void>();
   toggleMute = output<void>();

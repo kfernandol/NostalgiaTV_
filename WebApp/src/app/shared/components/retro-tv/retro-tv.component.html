@@ -3,6 +3,9 @@
     <div
     class="screen-overlay"
     #screenOverlay
+    (mouseenter)="onScreenMouseEnter()"
+    (mouseleave)="onScreenMouseLeave()"
+    (click)="onScreenClick()"
   >
       <div class="static-noise" [class.hidden]="!showStatic()"></div>
 
@@ -60,7 +63,7 @@
           class="series-overlay"
           [class.visible]="showOverlay()"
           [class.series-overlay--fs]="isFullscreen()"
-          [class.series-overlay--with-controls]="mode() === 'series' && !!currentEpisode()"
+          [class.series-overlay--with-controls]="!!currentEpisode() || !!currentState()"
         >
           <div class="overlay-info">
             @if (mode() === 'channels') {
@@ -85,12 +88,30 @@
             [audioTracks]="audioTracks()"
             [currentAudioTrack]="currentAudioTrack()"
             [isFullscreen]="isFullscreen()"
+            [showProgress]="false"
             (playPause)="togglePlayPause()"
             (toggleMute)="toggleMute()"
             (setVolume)="setVolume($event)"
-            (seek)="seekTo($event)"
-            (progressKeydown)="onProgressKeydown($event)"
-            (setAudioTrack)="setAudioTrack($event)"
+            (toggleFullscreen)="toggleFullscreen()"
+          />
+        }
+
+        @if (mode() === 'channels' && currentChannel()) {
+          <app-retro-tv-controls
+            [visible]="showOverlay()"
+            [isPaused]="isPaused()"
+            [isMuted]="isMuted()"
+            [volumeLevel]="volumeLevel()"
+            [progressPercent]="progressPercent()"
+            [currentTimeFormatted]="currentTimeFormatted()"
+            [durationFormatted]="durationFormatted()"
+            [audioTracks]="audioTracks()"
+            [currentAudioTrack]="currentAudioTrack()"
+            [isFullscreen]="isFullscreen()"
+            [showProgress]="false"
+            (playPause)="togglePlayPause()"
+            (toggleMute)="toggleMute()"
+            (setVolume)="setVolume($event)"
             (toggleFullscreen)="toggleFullscreen()"
           />
         }

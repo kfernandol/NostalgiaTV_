@@ -808,6 +808,17 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.scheduleEntries.set([]);
   }
 
+  onScheduleChannelChange(channelId: number): void {
+    const channel = this.channels().find(c => c.id === channelId);
+    if (!channel) return;
+    this.currentChannel.set(channel);
+    this.scheduleLoading.set(true);
+    this.http.get<ScheduleEntry[]>(`${this.apiUrl}/api/v1/public/channels/${channelId}/schedule`).subscribe({
+      next: data => { this.scheduleEntries.set(data); this.scheduleLoading.set(false); },
+      error: () => this.scheduleLoading.set(false),
+    });
+  }
+
   // ── UI ────────────────────────────────────────────────────────────────────
 
   toggleFullscreen(): void {

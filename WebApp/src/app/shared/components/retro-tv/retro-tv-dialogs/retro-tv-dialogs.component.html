@@ -120,40 +120,54 @@
 <!-- Schedule Dialog -->
 @if (showScheduleDialog()) {
   <div class="dialog-backdrop" (click)="closeScheduleDialog.emit()">
-    <div class="dialog-panel dialog-panel--schedule" (click)="$event.stopPropagation()">
-      <div class="dialog-header">
-        <span class="dialog-title">PROGRAMACIÓN</span>
-        <button mat-icon-button (click)="closeScheduleDialog.emit()" [tabindex]="10">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      @if (scheduleLoading()) {
-        <div class="dialog-empty">Cargando...</div>
-      } @else {
-        <div class="dialog-list">
-          @for (entry of scheduleEntries(); track entry.id) {
-            <div class="schedule-item" [class.schedule-item--current]="isCurrentEntry(entry)">
-              <div class="schedule-time">
-                <span class="schedule-start">{{ toLocalTime(entry.startTime) | date:'HH:mm' }}</span>
-                <span class="schedule-end">{{ toLocalTime(entry.endTime) | date:'HH:mm' }}</span>
-              </div>
-              <div class="schedule-info">
-                <span class="schedule-series">{{ entry.seriesName }}</span>
-                <span class="schedule-episode">{{ entry.episodeTitle }}</span>
-                <span class="schedule-meta">
-                  @if (entry.season > 0) { T{{ entry.season }} }
-                  @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
-                </span>
-              </div>
-              @if (entry.seriesLogoPath) {
-                <img [src]="apiUrl() + entry.seriesLogoPath" class="schedule-logo" />
+    <div class="dialog-wrapper">
+      @if (currentEntryIndex() >= 0) {
+        <div class="schedule-external-indicator" [style.top.px]="currentEntryPosition()"></div>
+      }
+      <div class="dialog-panel dialog-panel--schedule" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <span class="dialog-title">PROGRAMACIÓN</span>
+          <button mat-icon-button (click)="closeScheduleDialog.emit()" [tabindex]="10">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="dialog-filters">
+          <select class="retro-select" [value]="scheduleChannelId() ?? ''" (change)="scheduleChannelChange.emit(+$any($event.target).value)">
+            @for (channel of channels(); track channel.id) {
+              <option [value]="channel.id">{{ channel.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="schedule-content">
+          @if (scheduleLoading()) {
+            <div class="dialog-empty">Cargando...</div>
+          } @else {
+            <div class="dialog-list schedule-list" #scheduleList>
+              @for (entry of scheduleEntries(); track entry.id) {
+                <div class="schedule-item" [class.schedule-item--current]="isCurrentEntry(entry)" [attr.data-entry-id]="entry.id">
+                  <div class="schedule-time">
+                    <span class="schedule-start">{{ toLocalTime(entry.startTime) | date:'HH:mm' }}</span>
+                    <span class="schedule-end">{{ toLocalTime(entry.endTime) | date:'HH:mm' }}</span>
+                  </div>
+                  <div class="schedule-info">
+                    <span class="schedule-series">{{ entry.seriesName }}</span>
+                    <span class="schedule-episode">{{ entry.episodeTitle }}</span>
+                    <span class="schedule-meta">
+                      @if (entry.season > 0) { T{{ entry.season }} }
+                      @if (entry.episodeNumber > 0) { · EP{{ entry.episodeNumber }} }
+                    </span>
+                  </div>
+                  @if (entry.seriesLogoPath) {
+                    <img [src]="apiUrl() + entry.seriesLogoPath" class="schedule-logo" />
+                  }
+                </div>
+              } @empty {
+                <div class="dialog-empty">Sin programación disponible</div>
               }
             </div>
-          } @empty {
-            <div class="dialog-empty">Sin programación disponible</div>
           }
         </div>
-      }
+      </div>
     </div>
   </div>
 }

@@ -188,6 +188,7 @@
   [showScheduleDialog]="showScheduleDialog()"
   [scheduleEntries]="scheduleEntries()"
   [scheduleLoading]="scheduleLoading()"
+  [scheduleChannelId]="currentChannel()?.id ?? null"
   (closeSeriesDialog)="closeSeriesDialog()"
   (enterSeries)="enterSeriesMode($event)"
   (searchChange)="onSeriesSearchChange($event)"
@@ -198,4 +199,5 @@
   (updateSetting)="updateSetting($event.key, $event.value)"
   (resetAll)="resetAllProgress()"
   (closeScheduleDialog)="closeScheduleDialog()"
+  (scheduleChannelChange)="onScheduleChannelChange($event)"
 />

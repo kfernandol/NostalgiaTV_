@@ -473,11 +473,12 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.setVideoSrc(this.buildVideoSrc(state.filePath));
     video.load();
     video.currentTime = state.currentSecond;
-    video.muted = false;
-    this.isMuted.set(false);
+    video.muted = this.isMuted();
     video.play().catch(() => {
-      video.muted = true;
-      this.isMuted.set(true);
+      if (!this.isMuted()) {
+        video.muted = true;
+        this.isMuted.set(true);
+      }
       video.play().catch(() => {
         if (this.isIOSDevice) this.iosNeedsPlay.set(true);
       });

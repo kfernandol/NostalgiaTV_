@@ -133,6 +133,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private readonly supportsAV1 = this.detectAV1Support();
   readonly isIOSDevice: boolean = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  private readonly bestVideoType: string = this.detectBestVideoType();
   iosNeedsPlay = signal<boolean>(false);
 
   seasonGroups = computed(() => {
@@ -261,9 +262,42 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
            video.canPlayType('video/mp4; codecs="av01.0.05M.08"') !== '';
   }
 
+  private detectBestVideoType(): string {
+    if (!this.isIOSDevice) return 'video/mp4';
+    const video = document.createElement('video');
+    const types = [
+      'video/mp4; codecs="hvc1.1.6.L186.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.6.L153.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.6.L120.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.4.L186.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.4.L153.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.4.L120.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.2.L186.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.1.2.L120.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.2.4.L153.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.2.4.L120.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.3.1.L186.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1.3.1.L120.B0,mp4a.40.2"',
+      'video/mp4; codecs="hvc1"',
+      'video/mp4; codecs="hev1"',
+      'video/mp4',
+    ];
+    const best = types.find(t => video.canPlayType(t) === 'probably' || video.canPlayType(t) === 'maybe');
+    console.log('[NostalgiaTV] iOS best video type:', best ?? 'none');
+    return best ?? 'video/mp4';
+  }
+
   private buildVideoSrc(filePath: string): string {
     const cleanPath = filePath.replace('wwwroot', '').replace(/\\/g, '/');
     return `${this.apiUrl}${cleanPath}`;
+  }
+
+  private setVideoSrc(src: string): void {
+    const video = this.videoPlayer?.nativeElement;
+    const source = video?.querySelector('source') as HTMLSourceElement | null;
+    if (!source) return;
+    source.type = this.bestVideoType;
+    source.src = src;
   }
 
   // ── Audio tracks ──────────────────────────────────────────────────────────
@@ -447,7 +481,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.pendingNextEpisodePath = null;
     const video = this.videoPlayer?.nativeElement;
     if (!video) return;
-    video.src = `${this.apiUrl}${state.filePath}`;
+    this.setVideoSrc(this.buildVideoSrc(state.filePath));
     video.load();
     video.currentTime = state.currentSecond;
     video.muted = false;
@@ -564,7 +598,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.hubConnection?.stop();
     this.router.navigate([], { queryParams: {}, replaceUrl: true });
     const video = this.videoPlayer?.nativeElement;
-    if (video) { video.src = ''; video.load(); }
+    if (video) { this.setVideoSrc(''); video.load(); }
     clearInterval(this.uiUpdateInterval);
   }
 
@@ -591,7 +625,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
         const seriesId = this.selectedSeries()!.id;
         const savedSecond = this.watchedService.getLastProgress(seriesId, episode.id);
 
-        video.src = this.buildVideoSrc(episode.filePath!);
+        this.setVideoSrc(this.buildVideoSrc(episode.filePath!));
         video.load();
 
         video.addEventListener('loadedmetadata', () => {

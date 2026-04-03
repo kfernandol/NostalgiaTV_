@@ -1,4 +1,6 @@
 ﻿using ApplicationCore.DTOs.Channel;
+using ApplicationCore.DTOs.ChannelBumper;
+using ApplicationCore.DTOs.ChannelEra;
 using ApplicationCore.DTOs.Episode;
 using ApplicationCore.DTOs.Rol;
 using ApplicationCore.DTOs.Series;
@@ -15,7 +17,27 @@ namespace Infrastructure.Mappings
         public static void Configure()
         {
             TypeAdapterConfig<Channel, ChannelResponse>.NewConfig()
-                .Map(dest => dest.SeriesIds, src => src.Series.Select(s => s.Id).ToList());
+                .Map(dest => dest.SeriesIds, src => src.Series.Select(s => s.Id).ToList())
+                .Map(dest => dest.Eras, src => src.Eras.Select(e => new ChannelEraResponse
+                {
+                    Id = e.Id,
+                    ChannelId = e.ChannelId,
+                    ChannelName = e.Channel.Name,
+                    Name = e.Name,
+                    Description = e.Description,
+                    StartDate = e.StartDate,
+                    EndDate = e.EndDate,
+                    FolderPath = e.FolderPath,
+                    SeriesIds = e.Series.Select(s => s.Id).ToList(),
+                    Bumpers = e.Bumpers.Select(b => new ChannelBumperResponse
+                    {
+                        Id = b.Id,
+                        ChannelEraId = b.ChannelEraId,
+                        Title = b.Title,
+                        FilePath = b.FilePath,
+                        Order = b.Order
+                    }).ToList()
+                }).ToList());
 
             TypeAdapterConfig<SeriesRequest, Series>.NewConfig()
                 .Map(dest => dest.StartDate, src => DateOnly.FromDateTime(src.StartDate))

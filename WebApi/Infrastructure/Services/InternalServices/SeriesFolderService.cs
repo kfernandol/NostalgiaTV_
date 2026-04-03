@@ -50,5 +50,17 @@ namespace Infrastructure.Services.InternalServices
             for (int i = maxExisting + 1; i <= newSeasons; i++)
                 Directory.CreateDirectory(Path.Combine(folderPath, $"season {i}"));
         }
+
+        public string CreateChannelEraFolder(string channelName, string eraName)
+        {
+            var safeChannel = ToSafeFolderName(channelName);
+            var safeEra = ToSafeFolderName(eraName);
+            var eraPath = Path.Combine(_settings.BasePath, "channels", safeChannel, safeEra);
+
+            Directory.CreateDirectory(eraPath);
+            Directory.CreateDirectory(Path.Combine(eraPath, "bumpers"));
+
+            return eraPath;
+        }
     }
 }

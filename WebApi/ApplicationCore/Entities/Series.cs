@@ -19,5 +19,6 @@ namespace ApplicationCore.Entities
         public ICollection<Category> Categories { get; set; } = [];
         public ICollection<Episode> Episodes { get; set; } = [];
         public ICollection<Channel> Channels { get; set; } = [];
+        public ICollection<ChannelEra> ChannelEras { get; set; } = [];
     }
 }

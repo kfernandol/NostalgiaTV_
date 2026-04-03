@@ -47,9 +47,23 @@
       <span>{{ isCollapsed() ? 'VER CANALES' : 'OCULTAR' }}</span>
     </button>
 
-  </div>
+    </div>
 
-  <!-- Colapsable -->
+    <!-- Era selection -->
+    @if (hasChannel() && channelEras().length > 1) {
+      <div class="era-selection">
+        <span class="era-label">ERA:</span>
+        @for (era of channelEras(); track era.id) {
+          <button class="era-btn"
+            [class.active]="selectedEraId() === era.id"
+            (click)="selectEra.emit(era)">
+            {{ era.name }}
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Colapsable -->
   <div class="remote-collapsible">
 
     <div class="channels-list">

@@ -4,6 +4,7 @@ using Infrastructure.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(NostalgiaTVContext))]
-    partial class NostalgiaTVContextModelSnapshot : ModelSnapshot
+    [Migration("20260403105704_AddChannelErasAndBumpers")]
+    partial class AddChannelErasAndBumpers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -399,28 +402,6 @@ namespace Infrastructure.Migrations
                             ParentId = 1,
                             SortOrder = 4,
                             Url = "/dashboard/categories"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Caption = "Eras",
-                            Icon = "history_edu",
-                            IsVisible = true,
-                            Name = "Channel Eras",
-                            ParentId = 1,
-                            SortOrder = 5,
-                            Url = "/dashboard/channel-eras"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Caption = "Bumpers",
-                            Icon = "movie_filter",
-                            IsVisible = true,
-                            Name = "Channel Bumpers",
-                            ParentId = 1,
-                            SortOrder = 6,
-                            Url = "/dashboard/channel-bumpers"
                         });
                 });
 
@@ -665,16 +646,6 @@ namespace Infrastructure.Migrations
                         new
                         {
                             MenusId = 8,
-                            RolesId = 1
-                        },
-                        new
-                        {
-                            MenusId = 9,
-                            RolesId = 1
-                        },
-                        new
-                        {
-                            MenusId = 10,
                             RolesId = 1
                         });
                 });

@@ -361,7 +361,7 @@
 @media (max-width: 1400px) { .kid-section { height: 52dvh; } }
 @media (max-width: 1024px) {
   .tv-setup { width: 85vw; height: 75vh; }
-  .kid-section { height: 46dvh; }
+  .kid-section { height: 56dvh; }
 }
 @media (max-width: 768px) {
   .tv-setup {
@@ -371,7 +371,7 @@
   }
 
   .kid-section {
-    height: 22dvh;
+    height: 30dvh;
     width: auto;
     bottom: 40dvh;
   }
@@ -401,7 +401,7 @@
 
 @media (min-width: 1920px) {
   .tv-setup { width: 70vw; height: 83vh; }
-  .kid-section { max-height: 30dvh; }
+  .kid-section { max-height: 60dvh; }
   .kid-image { max-height: 100%; }
 }
 @media (min-width: 2560px) {

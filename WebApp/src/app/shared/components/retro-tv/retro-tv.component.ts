@@ -22,6 +22,7 @@ import * as signalR from '@microsoft/signalr';
 import { TvSettingsService } from '../../../core/services/tv-settings.service';
 import { WatchedService } from '../../../core/services/watched.service';
 import { SeriesResponse } from '../../models/serie.model';
+import { ScheduleEntry } from '../../models/channel-era.model';
 import { RetroTvControlsComponent } from "./retro-tv-controls/retro-tv-controls.component";
 import { RetroTvFiltersPanelComponent } from "./retro-tv-filters-panel/retro-tv-filters-panel.component";
 import { RetroTvRemoteChannelsComponent } from "./retro-tv-remote-channels/retro-tv-remote-channels.component";
@@ -29,11 +30,13 @@ import { RetroTvRemoteSeriesComponent } from "./retro-tv-remote-series/retro-tv-
 import { RetroTvDialogsComponent } from "./retro-tv-dialogs/retro-tv-dialogs.component";
 
 interface Channel { id: number; name: string; logoPath?: string; }
+interface ChannelEra { id: number; name: string; description?: string; seriesIds: number[]; }
 interface ChannelState {
   channelId: number; episodeId: number; episodeTitle: string;
   filePath: string; seriesName: string; seriesLogoPath?: string;
   currentSecond: number; nextEpisodeId: number;
   nextEpisodeTitle: string | null; secondsUntilNext: number;
+  isBumper?: boolean; bumperTitle?: string;
 }
 interface EpisodeType { id: number; name: string; }
 interface EpisodeResponse {
@@ -43,12 +46,6 @@ interface EpisodeResponse {
 }
 interface PagedResult<T> {
   items: T[]; totalCount: number; page: number; pageSize: number; totalPages: number;
-}
-interface ScheduleEntry {
-  id: number; channelId: number; episodeId: number;
-  episodeTitle: string; seriesName: string; seriesLogoPath?: string;
-  filePath: string; startTime: string; endTime: string;
-  season: number; episodeNumber: number;
 }
 
 type AppMode = 'channels' | 'series';
@@ -89,6 +86,8 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   mode = signal<AppMode>('channels');
   channels = signal<Channel[]>([]);
   currentChannel = signal<Channel | null>(null);
+  channelEras = signal<ChannelEra[]>([]);
+  selectedEraId = signal<number | null>(null);
   currentState = signal<ChannelState | null>(null);
   showStatic = signal<boolean>(true);
   isMuted = signal<boolean>(false);
@@ -440,7 +439,24 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   selectChannel(channel: Channel): void {
     this.stopProgressTracking();
     this.currentChannel.set(channel);
+    this.selectedEraId.set(null);
+    this.channelEras.set([]);
     this.showStatic.set(false);
+    this.hubConnection?.stop();
+    this.http.get<ChannelEra[]>(`${this.apiUrl}/api/v1/public/channels/${channel.id}/eras`).subscribe({
+      next: (eras) => {
+        this.channelEras.set(eras);
+        if (eras.length === 1) {
+          this.selectEra(eras[0]);
+        }
+      },
+    });
+  }
+
+  selectEra(era: ChannelEra): void {
+    this.selectedEraId.set(era.id);
+    const channel = this.currentChannel();
+    if (!channel) return;
     this.hubConnection?.stop();
     this.http.get<ChannelState>(`${this.apiUrl}/api/v1/public/channels/${channel.id}/state`).subscribe({
       next: state => {
@@ -630,29 +646,49 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     const seriesId = this.selectedSeries()?.id;
     if (!seriesId) return;
     let markedAsWatched = false;
+    let advanced = false;
+    const video = this.videoPlayer?.nativeElement;
+
+    const onEnded = () => {
+      if (advanced) return;
+      advanced = true;
+      clearInterval(this.progressInterval);
+      this.ngZone.run(() => {
+        if (this.settings().randomPlayback) this.playRandomEpisode();
+        else this.playNextEpisode(episode);
+      });
+    };
+
+    if (video) {
+      if (this._endedHandler) video.removeEventListener('ended', this._endedHandler);
+      this._endedHandler = onEnded;
+      video.addEventListener('ended', this._endedHandler, { once: true });
+    }
 
     this.ngZone.runOutsideAngular(() => {
       this.progressInterval = setInterval(() => {
-        const video = this.videoPlayer?.nativeElement;
-        if (!video || !video.duration) return;
-        const pct = video.currentTime / video.duration;
-        this.watchedService.markProgress(seriesId, episode.id, video.currentTime, pct >= 0.95);
+        const v = this.videoPlayer?.nativeElement;
+        if (!v || !v.duration) return;
+        const pct = v.currentTime / v.duration;
+        this.watchedService.markProgress(seriesId, episode.id, v.currentTime, pct >= 0.95);
         if (pct >= 0.95 && !markedAsWatched) {
           markedAsWatched = true;
           this.ngZone.run(() => this.markEpisodeCompleted(episode));
-        }
-        if (pct >= 0.99 || video.ended) {
-          clearInterval(this.progressInterval);
-          this.ngZone.run(() => {
-            if (this.settings().randomPlayback) this.playRandomEpisode();
-            else this.playNextEpisode(episode);
-          });
         }
       }, 5000);
     });
   }
 
-  private stopProgressTracking(): void { clearInterval(this.progressInterval); }
+  private _endedHandler: (() => void) | null = null;
+
+  private stopProgressTracking(): void {
+    clearInterval(this.progressInterval);
+    const video = this.videoPlayer?.nativeElement;
+    if (video && this._endedHandler) {
+      video.removeEventListener('ended', this._endedHandler!);
+    }
+    this._endedHandler = null;
+  }
 
   private markEpisodeCompleted(episode: EpisodeResponse): void {
     const seriesId = this.selectedSeries()?.id;

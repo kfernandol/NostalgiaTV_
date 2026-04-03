@@ -414,6 +414,45 @@
   }
 }
 
+.era-selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+
+.era-label {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.4rem;
+  color: #ffd93d;
+  margin-right: 0.3rem;
+}
+
+.era-btn {
+  background: linear-gradient(145deg, #2d2d44, #1a1a2e);
+  border: 1px solid rgba(107, 207, 127, 0.3);
+  border-radius: 12px;
+  padding: 0.3rem 0.6rem;
+  color: #6bcf7f;
+  font-family: 'VT323', monospace;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #6bcf7f;
+    box-shadow: 0 0 10px rgba(107, 207, 127, 0.3);
+  }
+
+  &.active {
+    border-color: #ff6b6b;
+    background: linear-gradient(145deg, #3d3d5c, #2a2a3e);
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+    color: #ff6b6b;
+  }
+}
+
 .desktop-nav {
   display: none;
 }

@@ -22,6 +22,8 @@ namespace Infrastructure.Contexts
         public DbSet<Channel> Channels { get; set; }
         public DbSet<ChannelState> ChannelStates { get; set; }
         public DbSet<ChannelScheduleEntry> ChannelScheduleEntries { get; set; }
+        public DbSet<ChannelEra> ChannelEras { get; set; }
+        public DbSet<ChannelBumper> ChannelBumpers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,7 +61,9 @@ namespace Infrastructure.Contexts
                 new Menu { Id = 3, Name = "Series", Caption = "Series", Icon = "movie", Url = "/dashboard/series", IsVisible = true, SortOrder = 1, ParentId = 1 },
                 new Menu { Id = 4, Name = "Episodes", Caption = "Episodios", Icon = "video_library", Url = "/dashboard/episodes", IsVisible = true, SortOrder = 2, ParentId = 1 },
                 new Menu { Id = 5, Name = "Channels", Caption = "Canales", Icon = "live_tv", Url = "/dashboard/channels", IsVisible = true, SortOrder = 3, ParentId = 1 },
-                new Menu { Id = 8, Name = "Categories", Caption = "Categorías", Icon = "category", Url = "/dashboard/categories", IsVisible = true, SortOrder = 4, ParentId = 1 }
+                new Menu { Id = 8, Name = "Categories", Caption = "Categorías", Icon = "category", Url = "/dashboard/categories", IsVisible = true, SortOrder = 4, ParentId = 1 },
+                new Menu { Id = 9, Name = "Channel Eras", Caption = "Eras", Icon = "history_edu", Url = "/dashboard/channel-eras", IsVisible = true, SortOrder = 5, ParentId = 1 },
+                new Menu { Id = 10, Name = "Channel Bumpers", Caption = "Bumpers", Icon = "movie_filter", Url = "/dashboard/channel-bumpers", IsVisible = true, SortOrder = 6, ParentId = 1 }
 
             );
 
@@ -71,7 +75,9 @@ namespace Infrastructure.Contexts
                 new { MenusId = 5, RolesId = 1 },
                 new { MenusId = 6, RolesId = 1 },
                 new { MenusId = 7, RolesId = 1 },
-                new { MenusId = 8, RolesId = 1 }
+                new { MenusId = 8, RolesId = 1 },
+                new { MenusId = 9, RolesId = 1 },
+                new { MenusId = 10, RolesId = 1 }
             );
 
             // Seed User
@@ -90,6 +96,35 @@ namespace Infrastructure.Contexts
                 new EpisodeType { Id = 4, Name = "Halloween Special" },
                 new EpisodeType { Id = 5, Name = "Movie" }
             );
+
+            modelBuilder.Entity<ChannelEra>()
+                .HasOne(e => e.Channel)
+                .WithMany(c => c.Eras)
+                .HasForeignKey(e => e.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelEra>()
+                .HasMany(e => e.Series)
+                .WithMany(s => s.ChannelEras)
+                .UsingEntity(j => j.ToTable("ChannelEraSeries"));
+
+            modelBuilder.Entity<ChannelBumper>()
+                .HasOne(b => b.ChannelEra)
+                .WithMany(e => e.Bumpers)
+                .HasForeignKey(b => b.ChannelEraId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ChannelScheduleEntry>()
+                .HasOne(e => e.Episode)
+                .WithMany()
+                .HasForeignKey(e => e.EpisodeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChannelScheduleEntry>()
+                .HasOne(e => e.Bumper)
+                .WithMany()
+                .HasForeignKey(e => e.BumperId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

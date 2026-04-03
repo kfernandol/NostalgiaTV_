@@ -12,9 +12,15 @@ namespace Infrastructure.Services.InternalServices
             _settings = settings.Value;
         }
 
+        private static string ToSafeFolderName(string name)
+        {
+            var invalid = new HashSet<char>(Path.GetInvalidFileNameChars()) { ':', '/', '\\' };
+            return new string(name.Select(c => invalid.Contains(c) ? '-' : c).ToArray()).Trim('-', ' ');
+        }
+
         public string CreateSeriesFolder(string seriesName, int seasons)
         {
-            var safeName = string.Concat(seriesName.Split(Path.GetInvalidFileNameChars()));
+            var safeName = ToSafeFolderName(seriesName);
             var seriesPath = Path.Combine(_settings.BasePath, "series", safeName);
 
             Directory.CreateDirectory(seriesPath);

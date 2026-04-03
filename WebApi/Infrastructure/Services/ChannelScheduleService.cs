@@ -74,6 +74,16 @@ namespace Infrastructure.Services
 
             if (!episodes.Any()) return;
 
+            // Get last episode played per series from existing schedule entries
+            var seriesLastEpisodes = await _context.ChannelScheduleEntries
+                .Where(e => e.ChannelId == channelId)
+                .Include(e => e.Episode)
+                .GroupBy(e => e.Episode.SeriesId)
+                .ToDictionaryAsync(
+                    g => g.Key,
+                    g => g.OrderByDescending(e => e.EndTime).Select(e => e.Episode).First()
+                );
+
             // Get episodes already used in the last 24h to avoid repeating
             var recentlyUsed = await _context.ChannelScheduleEntries
                 .Where(e => e.ChannelId == channelId && e.StartTime >= DateTime.UtcNow.AddHours(-24))
@@ -90,33 +100,91 @@ namespace Infrastructure.Services
 
             while (current < until)
             {
-                // Prefer episodes not used in last 24h and not the same as last.
-                // If the last episode was >= 20 min, also exclude episodes from the same series.
-                var pool = episodes
-                    .Where(e => e.Id != lastEpisodeId
-                             && !recentlyUsed.Contains(e.Id)
-                             && (lastDuration < MinDurationForSeriesRule || e.SeriesId != lastSeriesId))
+                // Filter available series (episodes not in recentlyUsed and respecting rules)
+                var availableSeries = episodes
+                    .GroupBy(e => e.SeriesId)
+                    .Where(g =>
+                    {
+                        var seriesId = g.Key;
+                        var hasFreshEpisodes = g.Any(e => !recentlyUsed.Contains(e.Id));
+                        var avoidsConsecutive = !g.Any(e => e.Id == lastEpisodeId);
+                        var respectsSeriesRule = lastDuration < MinDurationForSeriesRule || seriesId != lastSeriesId;
+                        return hasFreshEpisodes && avoidsConsecutive && respectsSeriesRule;
+                    })
+                    .Select(g => g.Key)
                     .ToList();
 
-                // If no fresh episodes available, allow repeats but still avoid consecutive
-                // and still respect the 20-min series rule
-                if (!pool.Any())
+                // If filtering is too strict, relax constraints progressively
+                if (!availableSeries.Any())
                 {
-                    pool = episodes
+                    availableSeries = episodes
+                        .Where(e => !recentlyUsed.Contains(e.Id)
+                                 && e.Id != lastEpisodeId
+                                 && (lastDuration < MinDurationForSeriesRule || e.SeriesId != lastSeriesId))
+                        .Select(e => e.SeriesId)
+                        .Distinct()
+                        .ToList();
+                }
+
+                if (!availableSeries.Any())
+                {
+                    availableSeries = episodes
                         .Where(e => e.Id != lastEpisodeId
                                  && (lastDuration < MinDurationForSeriesRule || e.SeriesId != lastSeriesId))
+                        .Select(e => e.SeriesId)
+                        .Distinct()
                         .ToList();
                     recentlyUsed.Clear();
                 }
 
-                // If series rule eliminates all options, relax it but still avoid same episode
-                if (!pool.Any())
-                    pool = episodes.Where(e => e.Id != lastEpisodeId).ToList();
+                if (!availableSeries.Any())
+                {
+                    availableSeries = episodes
+                        .Where(e => e.Id != lastEpisodeId)
+                        .Select(e => e.SeriesId)
+                        .Distinct()
+                        .ToList();
+                }
 
-                // Absolute last resort: any episode
-                if (!pool.Any()) pool = episodes;
+                if (!availableSeries.Any())
+                {
+                    availableSeries = episodes.Select(e => e.SeriesId).Distinct().ToList();
+                }
 
-                var episode = pool[random.Next(pool.Count)];
+                // Pick a random series
+                var selectedSeriesId = availableSeries[random.Next(availableSeries.Count)];
+                var seriesEpisodes = episodes.Where(e => e.SeriesId == selectedSeriesId).ToList();
+
+                // Find the next sequential episode for this series
+                Episode? episode;
+                if (seriesLastEpisodes.TryGetValue(selectedSeriesId, out var lastEpisode))
+                {
+                    // Get next episode after the last one played (same season, next number or next season, episode 1)
+                    episode = seriesEpisodes
+                        .Where(e => e.Season > lastEpisode.Season ||
+                                   (e.Season == lastEpisode.Season && e.EpisodeNumber > lastEpisode.EpisodeNumber))
+                        .OrderBy(e => e.Season)
+                        .ThenBy(e => e.EpisodeNumber)
+                        .FirstOrDefault();
+
+                    // If no next episode, wrap around to the first episode
+                    if (episode == null)
+                    {
+                        episode = seriesEpisodes
+                            .OrderBy(e => e.Season)
+                            .ThenBy(e => e.EpisodeNumber)
+                            .First();
+                    }
+                }
+                else
+                {
+                    // First time playing this series, start from the beginning
+                    episode = seriesEpisodes
+                        .OrderBy(e => e.Season)
+                        .ThenBy(e => e.EpisodeNumber)
+                        .First();
+                }
+
                 var duration = await VideoHelper.GetVideoDurationAsync(episode.FilePath!);
                 if (duration <= 0) duration = 1800; // fallback 30min
 
@@ -134,6 +202,9 @@ namespace Infrastructure.Services
                 lastSeriesId = episode.SeriesId;
                 lastDuration = duration;
                 current = end;
+
+                // Update tracking for this series
+                seriesLastEpisodes[selectedSeriesId] = episode;
             }
 
             _context.ChannelScheduleEntries.AddRange(newEntries);

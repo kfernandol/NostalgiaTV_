@@ -90,6 +90,9 @@ namespace Infrastructure.BackgroundServices
                 // Advance if current entry ended
                 if (state.CurrentSecond >= state.DurationSeconds)
                 {
+                    // Extend schedule 24h ahead before fetching the next entry
+                    await scheduleService.EnsureScheduleGeneratedAsync(channelId, DateTime.UtcNow.AddHours(24));
+
                     var entry = await scheduleService.GetCurrentEntryAsync(channelId);
                     if (entry == null) continue;
 

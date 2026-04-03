@@ -14,6 +14,7 @@
     inset 0 2px 4px rgba(255, 255, 255, 0.05);
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 100;
   width: 215px;
   display: flex;
@@ -158,11 +159,7 @@
 }
 
 .remote-footer {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 2px solid rgba(107, 207, 127, 0.2);
-
-  .mat-mdc-icon-button { color: #6bcf7f; }
+  display: none;
 }
 
 .media-controls {
@@ -330,7 +327,20 @@
 }
 
 .media-controls--inline {
-  display: none;
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(107, 207, 127, 0.15);
+  border-bottom: 1px solid rgba(107, 207, 127, 0.15);
+  margin-bottom: 0.5rem;
+
+  .mat-mdc-icon-button {
+    color: #6bcf7f;
+    width: 32px;
+    height: 32px;
+    .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
 }
 
 @media (max-width: 768px) {
@@ -385,11 +395,27 @@
 }
 
 .channel-top-actions {
-  display: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+
+  .nav-btn {
+    font-family: 'VT323', monospace !important;
+    font-size: 0.85rem !important;
+    padding: 0 0.2rem;
+    min-width: 0 !important;
+    letter-spacing: 0;
+    border-radius: 20px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    white-space: nowrap;
+    overflow: hidden;
+  }
 }
 
 .desktop-nav {
-  display: flex;
+  display: none;
 }
 
 @media (max-width: 768px) {

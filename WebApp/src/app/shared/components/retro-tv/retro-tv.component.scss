@@ -3,6 +3,7 @@
 :host {
   display: block;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 50%, #16213e 100%);
   font-family: 'VT323', monospace;
@@ -53,6 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
 }
 
 .video-player {
@@ -174,8 +176,8 @@
 
 .corner-logo {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: clamp(0.15rem, calc(0.4rem * var(--screen-scale, 1)), 0.6rem);
+  left: clamp(0.15rem, calc(0.4rem * var(--screen-scale, 1)), 0.6rem);
   z-index: 5;
   opacity: 0;
   transition: opacity 0.5s ease;
@@ -185,15 +187,10 @@
 }
 
 .corner-logo-img {
-  width: 125px;
-  height: 90px;
+  width: clamp(22px, calc(125px * var(--screen-scale, 1)), 220px);
+  height: clamp(16px, calc(90px * var(--screen-scale, 1)), 160px);
   object-fit: contain;
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8));
-}
-
-.corner-logo--fs .corner-logo-img {
-  width: 220px;
-  height: 160px;
 }
 
 .series-overlay {
@@ -201,7 +198,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 0.5rem 0.75rem;
+  padding: clamp(0.1rem, calc(0.5rem * var(--screen-scale, 1)), 1rem)
+           clamp(0.1rem, calc(0.7rem * var(--screen-scale, 1)), 1.5rem);
   background: linear-gradient(transparent, rgba(0,0,0,0.8));
   z-index: 5;
   opacity: 0;
@@ -209,44 +207,68 @@
   pointer-events: none;
 
   &.visible { opacity: 1; }
-  &--with-controls { padding-bottom: 2.8rem; }
-}
-
-.series-overlay--fs {
-  padding: 1.5rem 2rem;
-
-  &.series-overlay--with-controls { padding-bottom: 3.5rem; }
-
-  .overlay-series  { font-size: clamp(0.8rem, 2vw, 1.6rem); }
-  .overlay-episode { font-size: clamp(1.2rem, 2.5vw, 2rem); }
+  &--with-controls {
+    padding-bottom: clamp(0.7rem, calc(2.5rem * var(--screen-scale, 1)), 5rem);
+  }
 }
 
 .overlay-info { display: flex; flex-direction: column; gap: 0.1rem; }
 
 .overlay-series {
   font-family: 'Press Start 2P', cursive;
-  font-size: clamp(0.3rem, 0.8vw, 0.6rem);
+  font-size: clamp(0.2rem, calc(0.55rem * var(--screen-scale, 1)), 1rem);
   color: #ff6b6b;
 }
 
 .overlay-episode {
   font-family: 'VT323', monospace;
-  font-size: clamp(0.5rem, 1vw, 0.9rem);
+  font-size: clamp(0.3rem, calc(0.9rem * var(--screen-scale, 1)), 1.5rem);
   color: #6bcf7f;
+}
+
+.ios-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  border: clamp(1px, calc(2px * var(--screen-scale, 1)), 3px) solid rgba(107, 207, 127, 0.7);
+  border-radius: 50%;
+  color: #6bcf7f;
+  cursor: pointer;
+  width: clamp(18px, calc(56px * var(--screen-scale, 1)), 70px);
+  height: clamp(18px, calc(56px * var(--screen-scale, 1)), 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  animation: glow 2s ease-in-out infinite;
+
+  mat-icon {
+    font-size: clamp(10px, calc(36px * var(--screen-scale, 1)), 46px);
+    width: clamp(10px, calc(36px * var(--screen-scale, 1)), 46px);
+    height: clamp(10px, calc(36px * var(--screen-scale, 1)), 46px);
+  }
+
+  &:hover {
+    background: rgba(107, 207, 127, 0.2);
+    border-color: #6bcf7f;
+  }
 }
 
 .overlay-filter-btn {
   position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
+  top: clamp(0.15rem, calc(0.4rem * var(--screen-scale, 1)), 0.6rem);
+  right: clamp(0.15rem, calc(0.4rem * var(--screen-scale, 1)), 0.6rem);
   z-index: 10;
   background: rgba(0,0,0,0.5);
   border: 1px solid rgba(107,207,127,0.4);
-  border-radius: 6px;
+  border-radius: clamp(2px, calc(6px * var(--screen-scale, 1)), 8px);
   color: #6bcf7f;
   cursor: pointer;
-  width: 36px;
-  height: 36px;
+  width: clamp(16px, calc(36px * var(--screen-scale, 1)), 44px);
+  height: clamp(16px, calc(36px * var(--screen-scale, 1)), 44px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -254,7 +276,11 @@
   pointer-events: auto;
   opacity: 0;
 
-  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  mat-icon {
+    font-size: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
+    width: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
+    height: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
+  }
 
   &.visible { opacity: 1; }
 
@@ -271,6 +297,7 @@
   left: 0;
   width: 100%;
   height: 25vh;
+  height: 25dvh;
   background:
     linear-gradient(180deg, transparent 0%, rgba(42,42,62,0.3) 20%, rgba(42,42,62,0.8) 100%),
     repeating-linear-gradient(90deg, #2a2a3e 0px, #2a2a3e 2px, #32325a 2px, #32325a 4px),
@@ -314,8 +341,7 @@
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 20vw;
-  max-width: 400px;
+  height: 60dvh;
   z-index: 7;
   pointer-events: none;
   filter: drop-shadow(0 -10px 20px rgba(0, 0, 0, 0.5));
@@ -324,39 +350,60 @@
 .kid-image {
   width: 100%;
   height: auto;
+  max-height: 100%;
   display: block;
+  object-fit: contain;
   filter: drop-shadow(0 -10px 20px rgba(0, 0, 0, 0.5)) brightness(0.9);
 }
 
 
-@media (max-width: 1400px) { .kid-section { width: 35vw; } }
+@media (max-width: 1400px) { .kid-section { height: 52dvh; } }
 @media (max-width: 1024px) {
   .tv-setup { width: 85vw; height: 75vh; }
-  .kid-section { width: 38vw; }
+  .kid-section { height: 46dvh; }
 }
 @media (max-width: 768px) {
   .tv-setup {
     width: 100vw;
-    height: 35vh;
-    top: 17%;
+    height: 50dvh;
+    top: 30%;
   }
 
   .kid-section {
-    display: block;
-    width: 28vw;
-    bottom: 55vh; // encima del remote pero debajo de la TV
+    height: 22dvh;
+    width: auto;
+    bottom: 40dvh;
   }
 
   .floor {
     display: block;
-    height: 35vh;
-    bottom: 40vh;
+    bottom: 0;
+    height: 72dvh;
   }
 }
+
+@media (max-width: 480px) {
+  .tv-setup {
+    height: 50dvh;
+    top: 27%;
+  }
+
+  .kid-section {
+    height: 27dvh;
+    bottom: 40dvh;
+  }
+
+  .floor {
+    height: 75dvh;
+  }
+}
+
 @media (min-width: 1920px) {
   .tv-setup { width: 70vw; height: 83vh; }
+  .kid-section { max-height: 30dvh; }
+  .kid-image { max-height: 100%; }
 }
 @media (min-width: 2560px) {
   .tv-setup { width: 60vw; height: 80vh; }
-  .kid-section { width: 12vw; max-width: 300px; }
+  .kid-section { width: 12vw; max-width: 300px; max-height: 28dvh; }
 }

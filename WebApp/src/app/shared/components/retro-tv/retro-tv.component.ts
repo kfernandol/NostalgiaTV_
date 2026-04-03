@@ -132,6 +132,8 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   watchedMap = signal<Record<number, boolean>>({});
 
   private readonly supportsAV1 = this.detectAV1Support();
+  readonly isIOSDevice: boolean = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  iosNeedsPlay = signal<boolean>(false);
 
   seasonGroups = computed(() => {
     const eps = this.seriesEpisodes();
@@ -210,6 +212,19 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
           this.ngZone.run(() => this.isHovering.set(false));
         }
       });
+      overlay.addEventListener('click', () => {
+        if (this.isFullscreen()) return;
+        if (!(this.currentState() || this.currentEpisode())) return;
+        this.ngZone.run(() => {
+          clearTimeout(this.overlayTimeout);
+          if (this.isHovering()) {
+            this.isHovering.set(false);
+          } else {
+            this.isHovering.set(true);
+            this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 3000);
+          }
+        });
+      });
     });
 
     this.route.queryParams.subscribe(params => {
@@ -248,7 +263,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private buildVideoSrc(filePath: string): string {
     const cleanPath = filePath.replace('wwwroot', '').replace(/\\/g, '/');
-    if (!this.supportsAV1) console.warn('[NostalgiaTV] AV1 not supported.');
     return `${this.apiUrl}${cleanPath}`;
   }
 
@@ -292,6 +306,13 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   }
 
   // ── Playback controls ─────────────────────────────────────────────────────
+
+  iosStartPlay(): void {
+    const video = this.videoPlayer?.nativeElement;
+    if (!video) return;
+    this.iosNeedsPlay.set(false);
+    video.play().catch(err => console.error('iOS play failed:', err));
+  }
 
   togglePlayPause(): void {
     const video = this.videoPlayer?.nativeElement;
@@ -434,7 +455,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     video.play().catch(() => {
       video.muted = true;
       this.isMuted.set(true);
-      video.play().catch(err => console.error('Autoplay failed:', err));
+      video.play().catch(() => {
+        if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+      });
     });
     this.isEpisodeOverlay.set(true);
     clearTimeout(this.overlayTimeout);
@@ -557,8 +580,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   playEpisode(episode: EpisodeResponse): void {
     if (!episode.filePath) return;
-    const prev = this.currentEpisode();
-    if (prev && this.selectedSeries()) this.markEpisodeCompleted(prev);
     this.stopProgressTracking();
     this.showStatic.set(false);
 
@@ -583,7 +604,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
         video.play().catch(() => {
           video.muted = true;
           this.isMuted.set(true);
-          video.play().catch(err => console.error('Autoplay failed:', err));
+          video.play().catch(() => {
+            if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+          });
         });
 
         this.isEpisodeOverlay.set(true);
@@ -638,9 +661,10 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   }
 
   playRandomEpisode(): void {
-    const list = this.episodesForView();
-    const pool = list.filter(e => !this.watchedMap()[e.id]);
-    const source = pool.length > 0 ? pool : list;
+    // Aleatorio de TODOS los episodios de la serie (todas las temporadas)
+    const all = this.seriesEpisodes().filter(e => !!e.filePath);
+    const pool = all.filter(e => !this.watchedMap()[e.id]);
+    const source = pool.length > 0 ? pool : all;
     const random = source[Math.floor(Math.random() * source.length)];
     if (random) this.playEpisode(random);
   }
@@ -774,6 +798,16 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   private adjustOverlay(): void {
     const container = this.tvContainer.nativeElement;
     const overlay = this.screenOverlay.nativeElement;
+
+    if (document.fullscreenElement === overlay) {
+      const fsW = window.innerWidth;
+      const fsH = window.innerHeight;
+      const tvAspect = 650 / 759;
+      const fsScale = Math.min(fsW, fsH * tvAspect) / 650;
+      overlay.style.setProperty('--screen-scale', fsScale.toString());
+      return;
+    }
+
     const cw = container.offsetWidth, ch = container.offsetHeight;
     const ow = 650, oh = 759;
     const imageAspect = ow / oh;
@@ -788,10 +822,14 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     overlay.style.height = `${199 * scale}px`;
     overlay.style.left   = `${left + 198 * scale}px`;
     overlay.style.top    = `${top  +  27 * scale}px`;
+    overlay.style.setProperty('--screen-scale', scale.toString());
   }
 
   private fullscreenHandler = (): void => {
-    this.ngZone.run(() => this.isFullscreen.set(!!document.fullscreenElement));
+    this.ngZone.run(() => {
+      this.isFullscreen.set(!!document.fullscreenElement);
+      setTimeout(() => this.adjustOverlay(), 50);
+    });
   };
 
   private fsMouseMoveHandler = (): void => {

@@ -14,6 +14,7 @@
     inset 0 2px 4px rgba(255, 255, 255, 0.05);
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 100;
   width: 230px;
   display: flex;
@@ -260,11 +261,7 @@
 }
 
 .remote-footer--series {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 2px solid rgba(107, 207, 127, 0.2);
-
-  .mat-mdc-icon-button { color: #6bcf7f; }
+  display: none;
 }
 
 .media-controls {
@@ -274,8 +271,22 @@
   margin-bottom: 0.8rem;
 }
 
-// Solo visible en mobile
-.media-controls--inline { display: none; }
+.media-controls--inline {
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(107, 207, 127, 0.15);
+  border-bottom: 1px solid rgba(107, 207, 127, 0.15);
+  margin-top: 0.4rem;
+
+  .mat-mdc-icon-button {
+    color: #6bcf7f;
+    width: 32px;
+    height: 32px;
+    .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+}
 
 .nav-controls {
   display: flex;
@@ -503,13 +514,54 @@
   }
 }
 
-// Desktop — ocultar la fila compacta, usar change-series-btn normal
+// Fila compacta de acciones — visible en desktop y mobile
 .series-top-actions {
-  display: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+
+  .change-series-btn {
+    margin-top: 0;
+    font-family: 'VT323', monospace !important;
+    font-size: 0.85rem !important;
+    padding: 0 0.2rem;
+    letter-spacing: 0;
+    border-radius: 20px !important;
+    border-color: #6bcf7f !important;
+    background: transparent !important;
+    height: 32px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .nav-btn {
+    font-family: 'VT323', monospace !important;
+    font-size: 0.85rem !important;
+    padding: 0 0.2rem;
+    min-width: 0 !important;
+    letter-spacing: 0;
+    height: 32px !important;
+    line-height: 32px !important;
+    white-space: nowrap;
+    overflow: hidden;
+  }
 }
 
 // Quitar mobile-actions del collapsible en desktop
 .mobile-actions { display: none; }
+
+// Ocultar desktop-nav duplicado (acciones ya están en series-top-actions)
+.desktop-nav { display: none; }
+
+// Ocultar random-toggle clásico en desktop (ya está en media-controls--inline)
+.random-toggle { display: none; }
+
+// Ocultar dividers dentro del collapsible en todas las pantallas
+// (la separación ya la dan los bordes de media-controls--inline)
+.remote-divider--mobile-hidden { display: none; }
 
 @media (max-width: 768px) {
   .series-top-actions {

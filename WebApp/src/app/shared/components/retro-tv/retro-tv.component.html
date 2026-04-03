@@ -14,10 +14,16 @@
           [class.video-player--contain]="isFullscreen()"
           [muted]="isMuted()"
           playsinline
-          autoplay
+          [attr.autoplay]="isIOSDevice ? null : ''"
           disablePictureInPicture
           controlslist="nodownload nofullscreen noremoteplayback"
         ></video>
+
+        @if (isIOSDevice && iosNeedsPlay()) {
+          <button class="ios-play-btn" (click)="iosStartPlay()" aria-label="Reproducir">
+            <mat-icon>play_circle</mat-icon>
+          </button>
+        }
 
         <div
           class="video-filters"

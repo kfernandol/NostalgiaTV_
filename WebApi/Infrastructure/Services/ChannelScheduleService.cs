@@ -84,22 +84,36 @@ namespace Infrastructure.Services
             var current = from;
             var newEntries = new List<ChannelScheduleEntry>();
             int? lastEpisodeId = null;
+            int? lastSeriesId = null;
+            double lastDuration = 0;
+            const double MinDurationForSeriesRule = 1200; // 20 minutes in seconds
 
             while (current < until)
             {
-                // Prefer episodes not used in last 24h and not the same as last
+                // Prefer episodes not used in last 24h and not the same as last.
+                // If the last episode was >= 20 min, also exclude episodes from the same series.
                 var pool = episodes
-                    .Where(e => e.Id != lastEpisodeId && !recentlyUsed.Contains(e.Id))
+                    .Where(e => e.Id != lastEpisodeId
+                             && !recentlyUsed.Contains(e.Id)
+                             && (lastDuration < MinDurationForSeriesRule || e.SeriesId != lastSeriesId))
                     .ToList();
 
                 // If no fresh episodes available, allow repeats but still avoid consecutive
+                // and still respect the 20-min series rule
                 if (!pool.Any())
                 {
-                    pool = episodes.Where(e => e.Id != lastEpisodeId).ToList();
-                    recentlyUsed.Clear(); // Reset the recent list
+                    pool = episodes
+                        .Where(e => e.Id != lastEpisodeId
+                                 && (lastDuration < MinDurationForSeriesRule || e.SeriesId != lastSeriesId))
+                        .ToList();
+                    recentlyUsed.Clear();
                 }
 
-                // Last resort: any episode
+                // If series rule eliminates all options, relax it but still avoid same episode
+                if (!pool.Any())
+                    pool = episodes.Where(e => e.Id != lastEpisodeId).ToList();
+
+                // Absolute last resort: any episode
                 if (!pool.Any()) pool = episodes;
 
                 var episode = pool[random.Next(pool.Count)];
@@ -117,6 +131,8 @@ namespace Infrastructure.Services
 
                 recentlyUsed.Add(episode.Id);
                 lastEpisodeId = episode.Id;
+                lastSeriesId = episode.SeriesId;
+                lastDuration = duration;
                 current = end;
             }
 
@@ -126,11 +142,10 @@ namespace Infrastructure.Services
             _logger.LogInformation("Generated {count} schedule entries for channel {id}", newEntries.Count, channelId);
         }
 
-        // Called by ChannelBroadcastService to get current and next entry
+        // Called by ChannelBroadcastService to get current entry (does NOT generate schedule)
         public async Task<ChannelScheduleEntry?> GetCurrentEntryAsync(int channelId)
         {
             var now = DateTime.UtcNow;
-            await EnsureScheduleGeneratedAsync(channelId, now.AddHours(24));
 
             return await _context.ChannelScheduleEntries
                 .Include(e => e.Episode).ThenInclude(e => e.Series)

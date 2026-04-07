@@ -300,10 +300,8 @@ namespace Infrastructure.Services
                 }
                 else
                 {
-                    episode = seriesEpisodes
-                        .OrderBy(e => e.Season)
-                        .ThenBy(e => e.EpisodeNumber)
-                        .First();
+                    // First time scheduling this series: start from a random episode
+                    episode = seriesEpisodes[random.Next(seriesEpisodes.Count)];
                 }
 
                 _logger.LogInformation("[SCHEDULE] Iteration {iter}: Selected episode={ep} series={s} duration getting...",

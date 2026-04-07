@@ -6,6 +6,15 @@
     <button class="filters-panel-close" (click)="close.emit()">✕</button>
   </div>
 
+  <div class="filter-row filter-row--toggle">
+    <span class="filter-label">Activar filtros</span>
+    <input type="checkbox" [checked]="filtersEnabled()"
+      (change)="filtersEnabledChange.emit($any($event.target).checked)"
+    />
+  </div>
+
+  <div [class.filters-disabled]="!filtersEnabled()">
+
   <div class="filter-row">
     <span class="filter-label">Intensidad líneas</span>
     <div class="filter-control">
@@ -48,5 +57,7 @@
       (change)="updateFilter.emit({ key: 'scanlineAnimation', value: $any($event.target).checked })"
     />
   </div>
+
+  </div><!-- /filters-disabled wrapper -->
 
 </div>

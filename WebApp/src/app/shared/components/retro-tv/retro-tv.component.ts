@@ -101,7 +101,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   currentAudioTrack = signal<number>(0);
   volumeLevel = signal<number>(1);
 
-  private overlayFsTimeout?: ReturnType<typeof setTimeout>;
   private isEpisodeOverlay = signal<boolean>(false);
   private isHovering = signal<boolean>(false);
   showOverlay = computed(() => this.isEpisodeOverlay() || this.isHovering());
@@ -179,24 +178,26 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   private uiUpdateInterval?: ReturnType<typeof setInterval>;
   private readonly BUFFER_SECONDS = 20;
   private pendingNextEpisodePath: string | null = null;
-  private lastMouseMove = 0;
-  private mouseMoveScheduled = false;
 
   constructor() {
     effect(() => {
       const f = this.activeFilters();
+      const _enabled = this.settings().alwaysShowFilters; // track so effect re-runs when toggled
       this.applyVideoFilters(f.scanlineIntensity, f.scanlineDensity, f.crtCurvature, f.vignette);
     });
   }
 
   ngAfterViewInit(): void {
+    // Apply filters immediately — the effect() in constructor ran before the view existed
+    const f = this.activeFilters();
+    this.applyVideoFilters(f.scanlineIntensity, f.scanlineDensity, f.crtCurvature, f.vignette);
+
     this.loadChannels();
     this.loadEpisodeTypes();
     this.setupResizeObserver();
     setTimeout(() => this.adjustOverlay(), 100);
 
     this.ngZone.runOutsideAngular(() => {
-      document.addEventListener('mousemove', this.fsMouseMoveHandler);
       document.addEventListener('fullscreenchange', this.fullscreenHandler);
     });
 
@@ -222,8 +223,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     clearInterval(this.progressInterval);
     clearInterval(this.uiUpdateInterval);
     document.removeEventListener('fullscreenchange', this.fullscreenHandler);
-    document.removeEventListener('mousemove', this.fsMouseMoveHandler);
-    clearTimeout(this.overlayFsTimeout);
   }
 
   // ── AV1 ───────────────────────────────────────────────────────────────────
@@ -407,10 +406,11 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   private applyVideoFilters(intensity: number, density: number, curvature: boolean, vignette: boolean): void {
     const el = this.videoFilters?.nativeElement;
     if (!el) return;
-    el.style.setProperty('--scanline-opacity', (intensity / 100).toString());
+    const enabled = this.settings().alwaysShowFilters;
+    el.style.setProperty('--scanline-opacity', enabled ? (intensity / 100).toString() : '0');
     el.style.setProperty('--scanline-size', `${density * 2}px`);
-    el.style.setProperty('--curvature', curvature ? '1' : '0');
-    el.style.setProperty('--vignette', vignette ? '1' : '0');
+    el.style.setProperty('--curvature', (enabled && curvature) ? '1' : '0');
+    el.style.setProperty('--vignette', (enabled && vignette) ? '1' : '0');
   }
 
   updateFilter(key: string, value: boolean | number): void {
@@ -474,7 +474,8 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     video.currentTime = state.currentSecond;
     const wasMuted = this.isMuted();
     video.muted = wasMuted;
-    video.play().catch(() => {
+    video.play().catch((err: Error) => {
+      if (err.name === 'AbortError') return; // interrupted by next load(), not an autoplay block
       if (!wasMuted) {
         video.muted = true;
         this.isMuted.set(true);
@@ -627,7 +628,8 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
         const wasMuted = this.isMuted();
         video.muted = wasMuted;
-        video.play().catch(() => {
+        video.play().catch((err: Error) => {
+          if (err.name === 'AbortError') return; // interrupted by next load(), not an autoplay block
           if (!wasMuted) {
             video.muted = true;
             this.isMuted.set(true);
@@ -837,20 +839,6 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   // ── Screen overlay mouse handlers ─────────────────────────────────────────
 
-  onScreenMouseEnter(): void {
-    if (this.isFullscreen()) return;
-    if (!this.isHovering() && (this.currentState() || this.currentEpisode())) {
-      this.isHovering.set(true);
-    }
-  }
-
-  onScreenMouseLeave(): void {
-    if (this.isFullscreen()) return;
-    if (this.isHovering()) {
-      this.isHovering.set(false);
-    }
-  }
-
   onScreenClick(): void {
     if (this.isFullscreen()) return;
     if (!(this.currentState() || this.currentEpisode())) return;
@@ -859,7 +847,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
       this.isHovering.set(false);
     } else {
       this.isHovering.set(true);
-      this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 3000);
+      this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 5000);
     }
   }
 
@@ -921,17 +909,4 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     });
   };
 
-  private fsMouseMoveHandler = (): void => {
-    if (!this.isFullscreen()) return;
-    const now = Date.now();
-    if (now - this.lastMouseMove < 100) return;
-    this.lastMouseMove = now;
-    if (!this.isHovering()) {
-      this.ngZone.run(() => this.isHovering.set(true));
-    }
-    clearTimeout(this.overlayFsTimeout);
-    this.overlayFsTimeout = setTimeout(() => {
-      this.ngZone.run(() => this.isHovering.set(false));
-    }, 3000);
-  };
 }

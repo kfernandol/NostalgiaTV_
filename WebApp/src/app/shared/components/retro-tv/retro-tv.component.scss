@@ -264,12 +264,12 @@
   right: clamp(0.15rem, calc(0.4rem * var(--screen-scale, 1)), 0.6rem);
   z-index: 10;
   background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(107,207,127,0.4);
-  border-radius: clamp(2px, calc(6px * var(--screen-scale, 1)), 8px);
+  border: 1px solid rgba(107,207,127,0.5);
+  border-radius: 4px;
   color: #6bcf7f;
   cursor: pointer;
-  width: clamp(16px, calc(36px * var(--screen-scale, 1)), 44px);
-  height: clamp(16px, calc(36px * var(--screen-scale, 1)), 44px);
+  width: clamp(14px, calc(28px * var(--screen-scale, 1)), 36px);
+  height: clamp(14px, calc(28px * var(--screen-scale, 1)), 36px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,9 +278,9 @@
   opacity: 0;
 
   mat-icon {
-    font-size: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
-    width: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
-    height: clamp(9px, calc(20px * var(--screen-scale, 1)), 26px);
+    font-size: clamp(9px, calc(18px * var(--screen-scale, 1)), 22px);
+    width: clamp(9px, calc(18px * var(--screen-scale, 1)), 22px);
+    height: clamp(9px, calc(18px * var(--screen-scale, 1)), 22px);
   }
 
   &.visible { opacity: 1; }
@@ -401,10 +401,11 @@
 
 @media (min-width: 1920px) {
   .tv-setup { width: 70vw; height: 83vh; }
-  .kid-section { max-height: 60dvh; }
-  .kid-image { max-height: 100%; }
+  .kid-section { height: 60dvh; }
+  .kid-image { height: 60dvh; max-height: 60dvh; }
 }
 @media (min-width: 2560px) {
   .tv-setup { width: 60vw; height: 80vh; }
-  .kid-section { width: 12vw; max-width: 300px; max-height: 28dvh; }
+  .kid-section { height: 50dvh; }
+  .kid-image { height: 100%;}
 }

@@ -3,8 +3,6 @@
     <div
     class="screen-overlay"
     #screenOverlay
-    (mouseenter)="onScreenMouseEnter()"
-    (mouseleave)="onScreenMouseLeave()"
     (click)="onScreenClick()"
   >
       <div class="static-noise" [class.hidden]="!showStatic()"></div>
@@ -39,17 +37,19 @@
           [style.--scanline-size.px]="activeFilters().scanlineDensity"
         ></div>
 
-        <button
-          class="overlay-filter-btn"
-          [class.visible]="showOverlay()"
-          (click)="toggleFiltersPanel()"
-        >
-          <mat-icon>tune</mat-icon>
-        </button>
+        @if (settings().alwaysShowFilters) {
+          <button
+            class="overlay-filter-btn"
+            [class.visible]="true"
+            (click)="toggleFiltersPanel()"
+          >
+            <mat-icon>tune</mat-icon>
+          </button>
+        }
 
-        @if (mode() === 'channels' && currentState()?.seriesLogoPath) {
+        @if (mode() === 'channels' && currentChannel()?.logoPath) {
           <div class="corner-logo" [class.visible]="showOverlay()" [class.corner-logo--fs]="isFullscreen()">
-            <img [src]="apiUrl + currentState()!.seriesLogoPath" class="corner-logo-img" />
+            <img [src]="apiUrl + currentChannel()!.logoPath" class="corner-logo-img" />
           </div>
         }
 
@@ -67,8 +67,12 @@
         >
           <div class="overlay-info">
             @if (mode() === 'channels') {
-              <span class="overlay-series">{{ currentState()!.seriesName }}</span>
-              <span class="overlay-episode">{{ currentState()!.episodeTitle }}</span>
+              @if (currentState()!.isBumper) {
+                <span class="overlay-series">BUMPER</span>
+              } @else {
+                <span class="overlay-series">{{ currentState()!.seriesName }}</span>
+                <span class="overlay-episode">{{ currentState()!.episodeTitle }}</span>
+              }
             } @else {
               <span class="overlay-series">{{ selectedSeries()!.name }}</span>
               <span class="overlay-episode">{{ currentEpisode()!.title }}</span>
@@ -120,7 +124,9 @@
           <app-retro-tv-filters-panel
             [isFullscreen]="isFullscreen()"
             [activeFilters]="activeFilters()"
+            [filtersEnabled]="settings().alwaysShowFilters"
             (updateFilter)="updateFilter($event.key, $event.value)"
+            (filtersEnabledChange)="updateSetting('alwaysShowFilters', $event)"
             (close)="closeFiltersPanel()"
           />
         }

@@ -13,7 +13,9 @@ import { VideoFilterProfile } from '../../../../core/services/tv-settings.servic
 export class RetroTvFiltersPanelComponent {
   isFullscreen = input<boolean>(false);
   activeFilters = input.required<VideoFilterProfile>();
+  filtersEnabled = input<boolean>(true);
 
   updateFilter = output<{ key: string; value: boolean | number }>();
+  filtersEnabledChange = output<boolean>();
   close = output<void>();
 }

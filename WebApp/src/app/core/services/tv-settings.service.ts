@@ -21,8 +21,8 @@ export interface TvSettings {
 }
 
 const DEFAULT_FILTER: VideoFilterProfile = {
-    scanlineIntensity: 25,
-    scanlineDensity: 2,
+    scanlineIntensity: 15,
+    scanlineDensity: 1,
     crtCurvature: true,
     vignette: true,
     scanlineAnimation: true,
@@ -39,7 +39,7 @@ const DEFAULT_FILTER_FULLSCREEN: VideoFilterProfile = {
 const STORAGE_KEY = 'nostalgia_tv_settings';
 
 const DEFAULT_SETTINGS: TvSettings = {
-    alwaysShowFilters: false,
+    alwaysShowFilters: true,
     showBumpers: false,
     showAds: false,
     tvGlowEffect: true,

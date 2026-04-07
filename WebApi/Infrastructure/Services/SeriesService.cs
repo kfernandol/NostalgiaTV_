@@ -144,6 +144,16 @@ namespace Infrastructure.Services
 
             var toRemove = existingEpisodes.Where(e =>
                 e.FilePath == null || !scannedPaths.Contains(NormalizePath(e.FilePath))).ToList();
+
+            if (toRemove.Count > 0)
+            {
+                var toRemoveIds = toRemove.Select(e => e.Id).ToList();
+                var orphanedEntries = await _context.ChannelScheduleEntries
+                    .Where(e => e.EpisodeId.HasValue && toRemoveIds.Contains(e.EpisodeId.Value))
+                    .ToListAsync();
+                _context.ChannelScheduleEntries.RemoveRange(orphanedEntries);
+            }
+
             _context.Episodes.RemoveRange(toRemove);
 
             foreach (var (filePath, season, episodeTypeId) in scannedFiles)

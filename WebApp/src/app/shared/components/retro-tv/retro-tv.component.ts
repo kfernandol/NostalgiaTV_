@@ -101,9 +101,7 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   currentAudioTrack = signal<number>(0);
   volumeLevel = signal<number>(1);
 
-  private isEpisodeOverlay = signal<boolean>(false);
-  private isHovering = signal<boolean>(false);
-  showOverlay = computed(() => this.isEpisodeOverlay() || this.isHovering());
+  showOverlay = signal<boolean>(false);
 
   showSeriesDialog = signal<boolean>(false);
   showSettingsDialog = signal<boolean>(false);
@@ -486,9 +484,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
         this.iosNeedsPlay.set(true);
       }
     });
-    this.isEpisodeOverlay.set(true);
+    this.showOverlay.set(true);
     clearTimeout(this.overlayTimeout);
-    this.overlayTimeout = setTimeout(() => this.isEpisodeOverlay.set(false), 5000);
+    this.overlayTimeout = setTimeout(() => this.showOverlay.set(false), 5000);
   }
 
   private connectToHub(channelId: number): void {
@@ -641,9 +639,9 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
           }
         });
 
-        this.isEpisodeOverlay.set(true);
+        this.showOverlay.set(true);
         clearTimeout(this.overlayTimeout);
-        this.overlayTimeout = setTimeout(() => this.isEpisodeOverlay.set(false), 5000);
+        this.overlayTimeout = setTimeout(() => this.showOverlay.set(false), 5000);
 
         this.startProgressTracking(episode);
         this.startUiUpdate();
@@ -840,14 +838,13 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
   // ── Screen overlay mouse handlers ─────────────────────────────────────────
 
   onScreenClick(): void {
-    if (this.isFullscreen()) return;
     if (!(this.currentState() || this.currentEpisode())) return;
     clearTimeout(this.overlayTimeout);
-    if (this.isHovering()) {
-      this.isHovering.set(false);
+    if (this.showOverlay()) {
+      this.showOverlay.set(false);
     } else {
-      this.isHovering.set(true);
-      this.overlayTimeout = setTimeout(() => this.isHovering.set(false), 5000);
+      this.showOverlay.set(true);
+      this.overlayTimeout = setTimeout(() => this.showOverlay.set(false), 5000);
     }
   }
 
@@ -904,8 +901,12 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private fullscreenHandler = (): void => {
     this.ngZone.run(() => {
-      this.isFullscreen.set(!!document.fullscreenElement);
+      const fs = !!document.fullscreenElement;
+      this.isFullscreen.set(fs);
       setTimeout(() => this.adjustOverlay(), 50);
+      // Hide overlay on fullscreen transition so user starts with a clean state
+      clearTimeout(this.overlayTimeout);
+      this.showOverlay.set(false);
     });
   };
 

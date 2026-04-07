@@ -72,7 +72,7 @@
       </div>
       <div class="settings-list">
         <label class="setting-item">
-          <span>Siempre mostrar filtros</span>
+          <span>Activar filtros CRT</span>
           <input type="checkbox" [checked]="settings().alwaysShowFilters"
             (change)="updateSetting.emit({ key: 'alwaysShowFilters', value: $any($event.target).checked })"
           />
@@ -152,7 +152,6 @@
                   <div class="schedule-info">
                     @if (entry.bumperId) {
                       <span class="schedule-series schedule-series--bumper">BUMPER</span>
-                      <span class="schedule-episode schedule-episode--bumper">Intermisión</span>
                     } @else {
                       <span class="schedule-series">{{ entry.seriesName }}</span>
                       <span class="schedule-episode">{{ entry.episodeTitle }}</span>

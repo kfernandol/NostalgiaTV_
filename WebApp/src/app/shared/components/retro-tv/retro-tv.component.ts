@@ -473,14 +473,17 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     video.load();
     video.currentTime = state.currentSecond;
     const wasMuted = this.isMuted();
-    video.muted = false;
-    this.isMuted.set(false);
+    video.muted = wasMuted;
     video.play().catch(() => {
-      video.muted = true;
-      this.isMuted.set(true);
-      video.play().catch(() => {
-        if (this.isIOSDevice) this.iosNeedsPlay.set(true);
-      });
+      if (!wasMuted) {
+        video.muted = true;
+        this.isMuted.set(true);
+        video.play().catch(() => {
+          if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+        });
+      } else if (this.isIOSDevice) {
+        this.iosNeedsPlay.set(true);
+      }
     });
     this.isEpisodeOverlay.set(true);
     clearTimeout(this.overlayTimeout);
@@ -622,14 +625,18 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
           video.currentTime = savedSecond > 0 ? savedSecond : 0;
         }, { once: true });
 
-        video.muted = false;
-        this.isMuted.set(false);
+        const wasMuted = this.isMuted();
+        video.muted = wasMuted;
         video.play().catch(() => {
-          video.muted = true;
-          this.isMuted.set(true);
-          video.play().catch(() => {
-            if (this.isIOSDevice) this.iosNeedsPlay.set(true);
-          });
+          if (!wasMuted) {
+            video.muted = true;
+            this.isMuted.set(true);
+            video.play().catch(() => {
+              if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+            });
+          } else if (this.isIOSDevice) {
+            this.iosNeedsPlay.set(true);
+          }
         });
 
         this.isEpisodeOverlay.set(true);

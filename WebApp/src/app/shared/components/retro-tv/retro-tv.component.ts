@@ -266,10 +266,8 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
 
   private setVideoSrc(src: string): void {
     const video = this.videoPlayer?.nativeElement;
-    const source = video?.querySelector('source') as HTMLSourceElement | null;
-    if (!source) return;
-    source.type = this.bestVideoType;
-    source.src = src;
+    if (!video) return;
+    video.src = src;
   }
 
   // ── Audio tracks ──────────────────────────────────────────────────────────
@@ -470,18 +468,22 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
     this.pendingNextEpisodePath = null;
     const video = this.videoPlayer?.nativeElement;
     if (!video) return;
+
     this.setVideoSrc(this.buildVideoSrc(state.filePath));
     video.load();
     video.currentTime = state.currentSecond;
-    video.muted = this.isMuted();
+    const wasMuted = this.isMuted();
+    video.muted = wasMuted;
     video.play().catch(() => {
-      if (!this.isMuted()) {
+      if (!wasMuted) {
         video.muted = true;
         this.isMuted.set(true);
+        video.play().catch(() => {
+          if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+        });
+      } else if (this.isIOSDevice) {
+        this.iosNeedsPlay.set(true);
       }
-      video.play().catch(() => {
-        if (this.isIOSDevice) this.iosNeedsPlay.set(true);
-      });
     });
     this.isEpisodeOverlay.set(true);
     clearTimeout(this.overlayTimeout);
@@ -623,14 +625,18 @@ export class RetroTvComponent implements AfterViewInit, OnDestroy {
           video.currentTime = savedSecond > 0 ? savedSecond : 0;
         }, { once: true });
 
-        video.muted = false;
-        this.isMuted.set(false);
+        const wasMuted = this.isMuted();
+        video.muted = wasMuted;
         video.play().catch(() => {
-          video.muted = true;
-          this.isMuted.set(true);
-          video.play().catch(() => {
-            if (this.isIOSDevice) this.iosNeedsPlay.set(true);
-          });
+          if (!wasMuted) {
+            video.muted = true;
+            this.isMuted.set(true);
+            video.play().catch(() => {
+              if (this.isIOSDevice) this.iosNeedsPlay.set(true);
+            });
+          } else if (this.isIOSDevice) {
+            this.iosNeedsPlay.set(true);
+          }
         });
 
         this.isEpisodeOverlay.set(true);
